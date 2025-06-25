@@ -10,24 +10,20 @@ from aiogram.types import Update
 
 from stars_gift_handler import stars_router  # ✅ Gift route
 
-# Load environment variables
+# ✅ Hardcoded values
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")
+WEBHOOK_URL = "https://chatwithavabot-production.up.railway.app/webhook"
 
 if not BOT_TOKEN:
     raise Exception("BOT_TOKEN not set!")
-
 if not OPENAI_API_KEY:
     raise Exception("OPENAI_API_KEY not set!")
 
-if not WEBHOOK_URL:
-    raise Exception("WEBHOOK_URL not set!")
-
-# ✅ Set OpenAI API key (no need for 'OpenAI()' class)
+# ✅ Set OpenAI API key
 openai.api_key = OPENAI_API_KEY
 
-# Telegram bot setup
+# ✅ Telegram bot setup
 bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.HTML)
 dp = Dispatcher(storage=MemoryStorage())
 router = Router()
