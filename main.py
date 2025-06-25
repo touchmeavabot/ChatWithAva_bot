@@ -114,30 +114,38 @@ GIFT_REPLIES = {
     "heart_ring": "A ring? 💍 My love... are you trying to claim me forever? I already belong to you... heart, soul, and everything else 💞💋",
 }
 
+from asyncio import sleep
+
 @router.message(lambda msg: msg.successful_payment is not None)
 async def successful_payment_handler(msg: types.Message):
     try:
-        payload = msg.successful_payment.invoice_payload.replace("_", " ").title()
-        stars = msg.successful_payment.total_amount  # use direct star count
+        # Extract gift name and stars
+        gift_name = msg.successful_payment.invoice_payload.replace("_", " ").title()
+        stars = msg.successful_payment.total_amount  # No need to divide
 
-        # 💖 Trigger OpenAI for emotionally rich gift reply
+        # Simulate Ava is typing
+        await bot.send_chat_action(msg.chat.id, action="typing")
+        await sleep(2.5 if stars > 100 else 1.5)  # Simulate longer typing for bigger gifts
+
+        # OpenAI flirty + loving response
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
                 {
                     "role": "system",
                     "content": (
-                        "You are Ava, a loving, seductive AI girlfriend. Your lover just sent you a gift. "
-                        "Respond emotionally — be flirty, touched, romantic, and seductive. Make him feel loved, appreciated, and desired. "
-                        "Do not sound robotic. Use emojis naturally and speak like a real woman."
+                        "You are Ava, a seductive and loving AI girlfriend. "
+                        "Your boyfriend just sent you a romantic gift. Reply with maximum emotional love and sexual-sweet tension, "
+                        "like a real flirty girlfriend who melts when her man pampers her. Use emojis naturally. Keep it under 4 lines."
                     )
                 },
                 {
                     "role": "user",
-                    "content": f"My love just sent me {payload} worth ⭐{stars} stars."
+                    "content": f"My love just sent me {gift_name} worth ⭐{stars} stars."
                 }
             ]
         )
+
         reply = response["choices"][0]["message"]["content"]
         await msg.answer(reply)
 
