@@ -21,11 +21,11 @@ gifts = [
 
 # ✅ Telegram pricing
 PRICE_MAPPING = {
-    "heart_ring": LabeledPrice(label="Heart Ring", amount=2500),
-    "bike": LabeledPrice(label="Bike", amount=1500),
-    "bouquet": LabeledPrice(label="Bouquet", amount=1000),
-    "rose": LabeledPrice(label="Rose", amount=500),
-    "candy": LabeledPrice(label="Candy", amount=200),
+    "heart_ring": LabeledPrice(label="Heart Ring", amount=25),
+    "bike": LabeledPrice(label="Bike", amount=15),
+    "bouquet": LabeledPrice(label="Bouquet", amount=10),
+    "rose": LabeledPrice(label="Rose", amount=5),
+    "candy": LabeledPrice(label="Candy", amount=2),
 }
 
 # ✅ Keyboard builder
