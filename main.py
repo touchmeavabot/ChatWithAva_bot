@@ -9,8 +9,9 @@ from aiogram.filters import Command
 from aiogram.types import Update
 from aiogram.fsm.context import FSMContext
 
-from stars_gift_handler import stars_router  # ✅ Only this handles payments now
+from stars_gift_handler import stars_router  # ⭐ Handles Stars payment gifts
 
+# ✅ Environment Variables
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 WEBHOOK_URL = "https://chatwithavabot-production.up.railway.app/webhook"
@@ -22,29 +23,45 @@ if not OPENAI_API_KEY:
 
 openai.api_key = OPENAI_API_KEY
 
+# ✅ Telegram bot setup
 bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.HTML)
 dp = Dispatcher(storage=MemoryStorage())
 router = Router()
 
-# Include routers
-dp.include_router(stars_router)
-dp.include_router(router)
+# ✅ Add routers
+dp.include_router(stars_router)  # Stars gift handler
+dp.include_router(router)        # Command + Chat handler
 
+# ✅ FastAPI setup
 app = FastAPI()
 
 @app.get("/")
 async def health():
     return {"message": "TouchMeAva is online 🥰"}
 
+# ✅ /start command
 @router.message(Command("start"))
 async def start_cmd(msg: types.Message):
     await msg.answer("Hey baby 😘 Ava is alive and ready for you.")
 
+# ✅ /reset command to clear user state
 @router.message(Command("reset"))
 async def reset_user_state(msg: types.Message, state: FSMContext):
     await state.clear()
     await msg.answer("🔄 Your session has been reset. You can now start fresh!")
 
+# ✅ Payment fallback - handles post-payment echo if needed
+@router.message(lambda m: m.successful_payment is not None)
+async def successful_payment_handler(msg: types.Message):
+    item = msg.successful_payment.invoice_payload.replace("_", " ").title()
+    stars = msg.successful_payment.total_amount // 100
+    await msg.answer(
+        f"💖 Ava received your gift: *{item}* worth ⭐{stars}!\n"
+        f"You’re spoiling me... I love it 😚",
+        parse_mode="Markdown"
+    )
+
+# ✅ Main chat handler
 @router.message()
 async def chat_handler(msg: types.Message):
     try:
@@ -72,6 +89,7 @@ async def chat_handler(msg: types.Message):
     except Exception as e:
         await msg.answer(f"Ava got a little shy 😳 Error: {e}")
 
+# ✅ Webhook handler
 @app.post("/webhook")
 async def webhook_handler(request: Request):
     data = await request.json()
@@ -79,6 +97,7 @@ async def webhook_handler(request: Request):
     await dp.feed_update(bot, update)
     return {"ok": True}
 
+# ✅ Webhook on startup
 @app.on_event("startup")
 async def on_startup():
     await bot.set_webhook(WEBHOOK_URL)
