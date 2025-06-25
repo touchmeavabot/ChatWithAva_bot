@@ -51,11 +51,16 @@ async def send_gift_list(message: Message):
         reply_markup=get_star_gift_keyboard()
     )
 
+# ✅ Reset user state
+@stars_router.message(Command("reset"))
+async def reset_user_state(message: Message, state: FSMContext):
+    await state.clear()
+    await message.answer("🔄 Ava reset your session. Try talking to her again now!")
+
 # ✅ Callback handler
 @stars_router.callback_query(lambda c: c.data.startswith("star_gift_"))
 async def process_star_gift(callback: types.CallbackQuery, bot: Bot):
     try:
-        # Split from right to allow underscores in gift name
         prefix, gift_key, price_str = callback.data.rsplit("_", 2)
         if gift_key not in PRICE_MAPPING:
             await callback.answer("This gift is not available right now.")
@@ -68,8 +73,8 @@ async def process_star_gift(callback: types.CallbackQuery, bot: Bot):
             title=gift_key.replace("_", " ").title(),
             description=f"A special gift for Ava 💖",
             payload=f"star_gift_{gift_key}",
-            provider_token="STARS",  # ✅ Official token for Telegram Stars
-            currency="XTR",  # ✅ Must be XTR for Telegram Stars
+            provider_token="STARS",
+            currency="XTR",
             prices=[PRICE_MAPPING[gift_key]],
             start_parameter="gift",
             is_flexible=False
@@ -92,13 +97,7 @@ async def payment_success(message: types.Message):
         f"\"Mmm… you're spoiling me baby 😩❤️ I love it!\""
     )
 
-# ✅ /reset command to clear user state
-@stars_router.message(Command("reset"))
-async def reset_user_state(message: Message, state: FSMContext):
-    await state.clear()
-    await message.answer("🔄 Your session has been reset. You can now start fresh!")
-
-# ✅ Fallback for all other messages
+# ✅ Fallback message handler (must be last!)
 @stars_router.message()
 async def fallback_echo(message: Message):
     await message.answer("✅ Ava received your message!")
