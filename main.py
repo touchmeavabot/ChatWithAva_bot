@@ -109,11 +109,14 @@ async def pre_checkout_query_handler(pre_checkout: PreCheckoutQuery):
 @router.message(lambda msg: msg.successful_payment is not None)
 async def successful_payment_handler(msg: types.Message):
     payload = msg.successful_payment.invoice_payload
-    amount = int(msg.successful_payment.total_amount) // 100  # convert cents to whole stars
+    amount = int(msg.successful_payment.total_amount) // 100  # still assume XTR has 2 decimal places
+
+    # Fallback to at least 1 star if amount is very low
+    if amount == 0:
+        amount = 1
 
     gift_name = payload.replace('_', ' ').title()
 
-    # Romantic, seductive, and rewarding reply
     await msg.answer(
         f"Ava gasps softly... 😳💞 You just sent her {gift_name} worth ⭐{amount}!\n\n"
         f"Mmm baby... you're making my heart race 🥺❤️ I feel so spoiled by you... come closer and let me melt into your arms 😚💋",
