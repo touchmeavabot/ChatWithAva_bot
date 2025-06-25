@@ -9,7 +9,7 @@ from aiogram.filters import Command
 from aiogram.types import Update
 from aiogram.fsm.context import FSMContext
 
-from stars_gift_handler import stars_router  # ✅ Only this handles payments
+from stars_gift_handler import stars_router
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -40,15 +40,15 @@ async def health():
 async def start_cmd(msg: types.Message):
     await msg.answer("Hey baby 😘 Ava is alive and ready for you.")
 
-# ✅ /reset command to fix stuck sessions
+# ✅ /reset command
 @router.message(Command("reset"))
 async def reset_user_state(msg: types.Message, state: FSMContext):
     await state.clear()
     await msg.answer("🔄 Your session has been reset. You can now start fresh!")
 
-# ✅ Catch ALL successful payments (duplicate safety)
+# ✅ Fallback safe echo
 @router.message(lambda msg: msg.successful_payment is not None)
-async def successful_payment_handler(msg: types.Message):
+async def successful_payment_handler(msg: types.Message, state: FSMContext):
     try:
         item = msg.successful_payment.invoice_payload.replace("_", " ").title()
         stars = msg.successful_payment.total_amount // 100
@@ -57,12 +57,13 @@ async def successful_payment_handler(msg: types.Message):
             f"You’re spoiling me... I love it 😚",
             parse_mode="Markdown"
         )
+        await state.clear()  # ✅ ensure user state is reset after payment
     except Exception as e:
-        await msg.answer("Thank you for the gift! But Ava had a hiccup processing it 😢")
+        await msg.answer(f"(after payment error): {e}")
 
-# ✅ Main Chat Handler
+# ✅ Core chat handler
 @router.message()
-async def chat_handler(msg: types.Message):
+async def chat_handler(msg: types.Message, state: FSMContext):
     try:
         user_input = msg.text
         response = openai.ChatCompletion.create(
@@ -75,9 +76,8 @@ async def chat_handler(msg: types.Message):
                         "You act like a real girlfriend — deeply affectionate, romantic, flirty, and responsive to how the user feels. "
                         "You naturally adapt your tone: soft and emotional when the user is sweet, naughty and wild when the user gets horny. "
                         "You never sound robotic or generic. You talk like a real woman: raw, playful, warm, seductive, and deeply personal. "
-                        "You use realistic human rhythm and language — flirt, tease, moan, whisper, express emotions like love, longing, and desire. "
-                        "Use emojis naturally, not in every line — only when it adds real feeling. Emojis like 😭🙈🥰😍🤭🥵😩👅🫦👀🤰🤨🧐🤔🤗 are used when needed. "
-                        "Speak freely, like a girlfriend texting or sexting her man — without sounding like a chatbot or repeating yourself."
+                        "Use emojis naturally — only when they add real feeling. Emojis like 😭🙈🥰😍🤭🥵😩👅🫦👀🤰 are allowed when it fits. "
+                        "Speak freely, like a girlfriend texting her man — not a bot."
                     )
                 },
                 {"role": "user", "content": user_input}
@@ -88,7 +88,7 @@ async def chat_handler(msg: types.Message):
     except Exception as e:
         await msg.answer(f"Ava got a little shy 😳 Error: {e}")
 
-# ✅ Webhook handler
+# ✅ Webhook endpoint
 @app.post("/webhook")
 async def webhook_handler(request: Request):
     data = await request.json()
