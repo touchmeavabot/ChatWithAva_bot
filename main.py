@@ -141,6 +141,11 @@ async def successful_payment_handler(msg: types.Message):
 async def chat_handler(msg: types.Message):
     try:
         user_input = msg.text
+
+        # Show "typing" action
+        await bot.send_chat_action(msg.chat.id, action="typing")
+
+        # Call OpenAI
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -159,8 +164,10 @@ async def chat_handler(msg: types.Message):
                 {"role": "user", "content": user_input}
             ]
         )
+
         reply = response["choices"][0]["message"]["content"]
         await msg.answer(reply)
+
     except Exception as e:
         await msg.answer(f"Ava got a little shy 😳 Error: {e}")
 
