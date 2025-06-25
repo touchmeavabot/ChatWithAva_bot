@@ -73,7 +73,7 @@ async def process_star_gift(callback: types.CallbackQuery, bot: Bot):
     start_parameter="gift",
     is_flexible=False
 )
-        )
+        
     except Exception as e:
         await callback.message.answer(f"Error while processing gift: {e}")
 
