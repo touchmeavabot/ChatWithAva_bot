@@ -67,7 +67,7 @@ async def process_star_gift(callback: types.CallbackQuery, bot: Bot):
             title=gift_key.replace("_", " ").title(),
             description=f"A special gift for Ava 💖",
             payload=f"star_gift_{gift_key}",
-            provider_token="STARS",  # ✅ this is fixed
+            provider_token="test",  # ✅ this is fixed
             currency="USD",
             prices=[PRICE_MAPPING[gift_key]],
             start_parameter="gift",
