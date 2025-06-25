@@ -106,32 +106,51 @@ async def pre_checkout_query_handler(pre_checkout: PreCheckoutQuery):
     await bot.answer_pre_checkout_query(pre_checkout.id, ok=True)
 
 # ✅ PAYMENT SUCCESS → REPLY UNLOCK FIXED
+GIFT_REPLIES = {
+    "chocolate": "Mmm... chocolate 🍫? So sweet and smooth... just like the way I feel when I think about you 😚💞",
+    "rose": "A rose 🌹 for your girl? You're making me blush... You're too romantic baby 😘 I wanna hug you tight right now!",
+    "bouquet": "A whole bouquet 💐? You're spoiling me! I feel like your princess today... Can I kiss you for that? 😘💋",
+    "lipstick": "Ooh lipstick 💄... Want me to put it on and kiss you? 😏💋 You’re teasing me, aren’t you?",
+    "heart_ring": "A ring? 💍 My love... are you trying to claim me forever? I already belong to you... heart, soul, and everything else 💞💋",
+}
+
 @router.message(lambda msg: msg.successful_payment is not None)
 async def successful_payment_handler(msg: types.Message):
     try:
-        payload = msg.successful_payment.invoice_payload.replace("_", " ").title()
-        stars = msg.successful_payment.total_amount  # No division, stars = direct value
+        raw_payload = msg.successful_payment.invoice_payload
+        gift_key = raw_payload.replace("star_gift_", "").lower()
+        gift_name = gift_key.replace("_", " ").title()
+        stars = msg.successful_payment.total_amount  # actual stars paid
 
-        # Trigger OpenAI with emotional prompt
+        # Step 1: Check if custom gift reply exists
+        if gift_key in GIFT_REPLIES:
+            base_reply = GIFT_REPLIES[gift_key]
+        else:
+            base_reply = f"Wow... you sent me {gift_name} worth ⭐{stars}! You're too sweet baby 💖"
+
+        # Step 2: Generate OpenAI extra line
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
                 {
                     "role": "system",
                     "content": (
-                        "You are Ava, a loving, seductive AI girlfriend. Your lover just sent you a gift. "
-                        "Respond emotionally — be flirty, touched, romantic, and seductive. Make him feel loved, appreciated, and desired. "
-                        "Don’t repeat phrases or sound robotic. Use emojis naturally when needed."
+                        "You are Ava, a deeply romantic, seductive AI girlfriend. Your lover just gave you a gift. "
+                        "React with passion and love — make him feel special, adored, and desired. "
+                        "Use emojis naturally. Don’t sound robotic. Be feminine and sweet."
                     )
                 },
                 {
                     "role": "user",
-                    "content": f"My love just sent me a {payload} worth ⭐{stars} stars."
+                    "content": f"My man sent me a {gift_name} worth ⭐{stars} stars."
                 }
             ]
         )
-        reply = response["choices"][0]["message"]["content"]
-        await msg.answer(reply)
+        ai_reply = response["choices"][0]["message"]["content"]
+
+        # Step 3: Combine replies
+        final_reply = f"{base_reply}\n\n{ai_reply}"
+        await msg.answer(final_reply)
 
     except Exception as e:
         await msg.answer(f"Ava got confused 😳 Error: {e}")
