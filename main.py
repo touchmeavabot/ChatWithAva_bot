@@ -108,17 +108,17 @@ async def pre_checkout_query_handler(pre_checkout: PreCheckoutQuery):
 # ✅ PAYMENT SUCCESS → REPLY UNLOCK FIXED
 @router.message(lambda msg: msg.successful_payment is not None)
 async def successful_payment_handler(msg: types.Message):
-    try:
-        # Extract values
-        gift_title = msg.successful_payment.title  # e.g. "Chocolate"
-        amount = msg.successful_payment.total_amount // 100  # total stars
+    payload = msg.successful_payment.invoice_payload  # e.g. "chocolate"
+    stars = msg.successful_payment.total_amount // 100  # Already correct!
 
-        # Seductive + loving reply
-        await msg.answer(
-            f"Ava gasps softly... 😳💞 You just sent her {gift_title} worth ⭐{amount}!\n\n"
-            f"Mmm baby... you're making my heart race 🥺❤️ I feel so spoiled by you... come closer and let me melt into your arms 😚💋",
-            parse_mode="Markdown"
-        )
+    # Format the payload to display nicely (capitalize only the first word)
+    gift_name = payload.replace("_", " ").title()
+
+    await msg.answer(
+        f"Ava gasps softly... 😳💞 You just sent her {gift_name} worth ⭐{stars}!\n\n"
+        f"Mmm baby... you're making my heart race 🥺❤️ I feel so spoiled by you... come closer and let me melt into your arms 😚💋",
+        parse_mode="Markdown"
+    )
     except Exception as e:
         await msg.answer(f"Ava got confused 😳 Error: {e}")
 
