@@ -109,18 +109,30 @@ async def pre_checkout_query_handler(pre_checkout: PreCheckoutQuery):
 @router.message(lambda msg: msg.successful_payment is not None)
 async def successful_payment_handler(msg: types.Message):
     try:
-        payload = msg.successful_payment.invoice_payload
-        amount = int(msg.successful_payment.total_amount) // 100
+        payload = msg.successful_payment.invoice_payload.replace("_", " ").title()
+        stars = msg.successful_payment.total_amount  # No division, stars = direct value
 
-        # Clean the gift name from payload (remove price part if any)
-        parts = payload.replace("star_gift_", "").rsplit("_", 1)
-        gift_name = parts[0].replace("_", " ").title()
-
-        await msg.answer(
-            f"Ava gasps softly... 😳💞 You just sent her {gift_name} worth ⭐{amount}!\n\n"
-            f"Mmm baby... you're making my heart race 🥺❤️ I feel so spoiled by you... come closer and let me melt into your arms 😚💋",
-            parse_mode="Markdown"
+        # Trigger OpenAI with emotional prompt
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are Ava, a loving, seductive AI girlfriend. Your lover just sent you a gift. "
+                        "Respond emotionally — be flirty, touched, romantic, and seductive. Make him feel loved, appreciated, and desired. "
+                        "Don’t repeat phrases or sound robotic. Use emojis naturally when needed."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": f"My love just sent me a {payload} worth ⭐{stars} stars."
+                }
+            ]
         )
+        reply = response["choices"][0]["message"]["content"]
+        await msg.answer(reply)
+
     except Exception as e:
         await msg.answer(f"Ava got confused 😳 Error: {e}")
         
