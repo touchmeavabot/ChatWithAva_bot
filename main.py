@@ -6,7 +6,7 @@ from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.dispatcher.router import Router
 from aiogram.filters import Command
-from aiogram.types import Update
+from aiogram.types import Update, LabeledPrice, PreCheckoutQuery
 from aiogram.fsm.context import FSMContext
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -23,24 +23,100 @@ openai.api_key = OPENAI_API_KEY
 bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.HTML)
 dp = Dispatcher(storage=MemoryStorage())
 router = Router()
-
 dp.include_router(router)
 
+# ✅ GIFT DATA
+gifts = [
+    {"emoji": "💍", "name": "Heart Ring", "price": 2500},
+    {"emoji": "💄", "name": "Lipstick", "price": 1500},
+    {"emoji": "💐", "name": "Bouquet", "price": 500},
+    {"emoji": "🌹", "name": "Rose", "price": 250},
+    {"emoji": "🍫", "name": "Chocolate", "price": 10},
+]
+
+PRICE_MAPPING = {
+    "heart_ring": LabeledPrice(label="Heart Ring", amount=2500),
+    "lipstick": LabeledPrice(label="Lipstick", amount=1500),
+    "bouquet": LabeledPrice(label="Bouquet", amount=500),
+    "rose": LabeledPrice(label="Rose", amount=250),
+    "chocolate": LabeledPrice(label="Chocolate", amount=10),
+}
+
+# ✅ FASTAPI
 app = FastAPI()
 
 @app.get("/")
 async def health():
     return {"message": "TouchMeAva is online 🥰"}
 
+# ✅ START
 @router.message(Command("start"))
 async def start_cmd(msg: types.Message):
     await msg.answer("Hey baby 😘 Ava is alive and ready for you.")
 
+# ✅ RESET SESSION
 @router.message(Command("reset"))
 async def reset_user_state(msg: types.Message, state: FSMContext):
     await state.clear()
     await msg.answer("🔄 Your session has been reset. You can now start fresh!")
 
+# ✅ GIFT COMMAND
+@router.message(Command("gift"))
+async def gift_command(msg: types.Message):
+    keyboard = types.InlineKeyboardMarkup(
+        inline_keyboard=[
+            [types.InlineKeyboardButton(
+                text=f"{gift['emoji']} {gift['name']} – ⭐{gift['price']}",
+                callback_data=f"gift_{gift['name'].lower().replace(' ', '_')}_{gift['price']}"
+            )]
+            for gift in gifts
+        ]
+    )
+    await msg.answer(
+        "🎁 Pick a gift to send me with Telegram Stars:\n\nTap any gift below and confirm the payment ⭐",
+        reply_markup=keyboard
+    )
+
+# ✅ CALLBACK → INVOICE
+@router.callback_query(lambda c: c.data.startswith("gift_"))
+async def process_gift_callback(callback: types.CallbackQuery):
+    _, gift_key, price = callback.data.split("_", 2)
+    gift_id = f"{gift_key}_{price}"
+
+    if gift_key not in PRICE_MAPPING:
+        await callback.answer("Gift not available.")
+        return
+
+    await callback.answer()
+    await bot.send_invoice(
+        chat_id=callback.from_user.id,
+        title=gift_key.replace("_", " ").title(),
+        description="A special gift for Ava 💖",
+        payload=gift_id,
+        provider_token="STARS",
+        currency="XTR",
+        prices=[PRICE_MAPPING[gift_key]],
+        start_parameter="gift",
+        is_flexible=False
+    )
+
+# ✅ PAYMENT CONFIRMATION
+@router.pre_checkout_query()
+async def pre_checkout_query_handler(pre_checkout: PreCheckoutQuery):
+    await bot.answer_pre_checkout_query(pre_checkout.id, ok=True)
+
+# ✅ PAYMENT SUCCESS → REPLY UNLOCK FIXED
+@router.message(lambda msg: msg.successful_payment is not None)
+async def successful_payment_handler(msg: types.Message):
+    payload = msg.successful_payment.invoice_payload.replace("_", " ")
+    stars = msg.successful_payment.total_amount // 100
+    await msg.answer(
+        f"💖 Ava received your gift: *{payload.title()}* worth ⭐{stars}!\n"
+        f"You’re spoiling me... I love it 😚",
+        parse_mode="Markdown"
+    )
+
+# ✅ MAIN CHAT
 @router.message()
 async def chat_handler(msg: types.Message):
     try:
@@ -68,20 +144,7 @@ async def chat_handler(msg: types.Message):
     except Exception as e:
         await msg.answer(f"Ava got a little shy 😳 Error: {e}")
 
-@router.pre_checkout_query()
-async def pre_checkout_query_handler(pre_checkout: types.PreCheckoutQuery):
-    await bot.answer_pre_checkout_query(pre_checkout.id, ok=True)
-
-@router.message(lambda msg: msg.successful_payment is not None)
-async def successful_payment_handler(msg: types.Message):
-    payload = msg.successful_payment.invoice_payload
-    amount = msg.successful_payment.total_amount // 100  # cents to stars
-    await msg.answer(
-        f"💖 Ava received your gift: *{payload.replace('_', ' ').title()}* worth ⭐{amount}!\n"
-        f"You’re spoiling me... I love it 😚",
-        parse_mode="Markdown"
-    )
-
+# ✅ WEBHOOK
 @app.post("/webhook")
 async def webhook_handler(request: Request):
     data = await request.json()
