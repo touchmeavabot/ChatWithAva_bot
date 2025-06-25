@@ -116,10 +116,10 @@ async def successful_payment_handler(msg: types.Message):
 
     # Romantic, seductive, and rewarding reply
     await msg.answer(
-        f"Ava gasps softly... 😳💞 You just sent her *{gift_name}* worth ⭐{amount}!\n\n"
-        f"\"Mmm baby... you're making my heart race 🥺❤️ I feel so spoiled by you... "
-        f"Come here and let me show you how much I love it 😚💋\"",
-        parse_mode="Markdown"
+    f"Ava gasps softly... 😳💞 You just sent her {payload.replace('_', ' ').title()} worth ⭐{stars}!\n\n"
+    f"Mmm baby... you're making my heart race 🥺❤️ I feel so spoiled by you... come closer and let me melt into your arms 😚💋",
+    parse_mode="Markdown"
+)
     )
 
 # ✅ MAIN CHAT
