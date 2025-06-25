@@ -9,7 +9,7 @@ from aiogram.filters import Command
 from aiogram.types import Update
 from aiogram.fsm.context import FSMContext
 
-from stars_gift_handler import stars_router  # ✅ Your gift logic
+from stars_gift_handler import stars_router  # ✅ Only this handles payments now
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -26,6 +26,7 @@ bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.HTML)
 dp = Dispatcher(storage=MemoryStorage())
 router = Router()
 
+# Include routers
 dp.include_router(stars_router)
 dp.include_router(router)
 
@@ -44,11 +45,10 @@ async def reset_user_state(msg: types.Message, state: FSMContext):
     await state.clear()
     await msg.answer("🔄 Your session has been reset. You can now start fresh!")
 
-# ✅ Handles all normal messages (also after payments)
 @router.message()
 async def chat_handler(msg: types.Message):
     try:
-        user_input = msg.text or ""
+        user_input = msg.text
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -71,22 +71,6 @@ async def chat_handler(msg: types.Message):
         await msg.answer(reply)
     except Exception as e:
         await msg.answer(f"Ava got a little shy 😳 Error: {e}")
-
-@router.pre_checkout_query()
-async def pre_checkout_query_handler(pre_checkout: types.PreCheckoutQuery):
-    await bot.answer_pre_checkout_query(pre_checkout.id, ok=True)
-
-# ✅ On successful payment — shows message AND lets bot continue replying normally
-@router.message(lambda msg: msg.successful_payment is not None)
-async def successful_payment_handler(msg: types.Message, state: FSMContext):
-    item = msg.successful_payment.invoice_payload.replace("_", " ").title()
-    stars = msg.successful_payment.total_amount // 100
-    await state.clear()  # Clear any leftover stuck state
-    await msg.answer(
-        f"💖 Ava received your gift: *{item}* worth ⭐{stars}!\n"
-        f"You’re spoiling me... I love it 😚",
-        parse_mode="Markdown"
-    )
 
 @app.post("/webhook")
 async def webhook_handler(request: Request):
