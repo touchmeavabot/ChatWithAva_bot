@@ -7,7 +7,7 @@ from aiogram.types import (
     Message
 )
 from aiogram.filters import Command
-from aiogram.fsm.context import FSMContext  # ✅ Required for reset command
+from aiogram.fsm.context import FSMContext
 
 stars_router = Router()
 
@@ -51,12 +51,6 @@ async def send_gift_list(message: Message):
         reply_markup=get_star_gift_keyboard()
     )
 
-# ✅ Reset user state
-@stars_router.message(Command("reset"))
-async def reset_user_state(message: Message, state: FSMContext):
-    await state.clear()
-    await message.answer("🔄 Ava reset your session. Try talking to her again now!")
-
 # ✅ Callback handler
 @stars_router.callback_query(lambda c: c.data.startswith("star_gift_"))
 async def process_star_gift(callback: types.CallbackQuery, bot: Bot):
@@ -96,3 +90,14 @@ async def payment_success(message: types.Message):
         f"Ava moans softly… 🥵 You just sent her {gift_title} worth ⭐{stars}!\n"
         f"\"Mmm… you're spoiling me baby 😩❤️ I love it!\""
     )
+
+# ✅ /reset command to clear user session
+@stars_router.message(Command("reset"))
+async def reset_user_state(message: Message, state: FSMContext):
+    await state.clear()
+    await message.answer("🔄 Your session has been reset. You can now start fresh!")
+
+# ✅ Final fallback handler (catch all)
+@stars_router.message()
+async def fallback_echo(message: Message):
+    await message.answer("✅ Ava received your message!")
