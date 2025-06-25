@@ -96,8 +96,3 @@ async def payment_success(message: types.Message):
         f"Ava moans softly… 🥵 You just sent her {gift_title} worth ⭐{stars}!\n"
         f"\"Mmm… you're spoiling me baby 😩❤️ I love it!\""
     )
-
-# ✅ Fallback message handler (must be last!)
-@stars_router.message()
-async def fallback_echo(message: Message):
-    await message.answer("✅ Ava received your message!")
