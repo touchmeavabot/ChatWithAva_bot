@@ -108,11 +108,17 @@ async def pre_checkout_query_handler(pre_checkout: PreCheckoutQuery):
 # ✅ PAYMENT SUCCESS → REPLY UNLOCK FIXED
 @router.message(lambda msg: msg.successful_payment is not None)
 async def successful_payment_handler(msg: types.Message):
-    payload = msg.successful_payment.invoice_payload.replace("_", " ")
-    stars = msg.successful_payment.total_amount // 100
+    payload = msg.successful_payment.invoice_payload
+    amount = int(msg.successful_payment.total_amount) // 100  # convert cents to whole stars
+
+    # Format payload into a prettier gift name
+    gift_name = payload.replace('_', ' ').title()
+
+    # Romantic, seductive, and rewarding reply
     await msg.answer(
-        f"💖 Ava received your gift: *{payload.title()}* worth ⭐{stars}!\n"
-        f"You’re spoiling me... I love it 😚",
+        f"Ava gasps softly... 😳💞 You just sent her *{gift_name}* worth ⭐{amount}!\n\n"
+        f"\"Mmm baby... you're making my heart race 🥺❤️ I feel so spoiled by you... "
+        f"Come here and let me show you how much I love it 😚💋\"",
         parse_mode="Markdown"
     )
 
