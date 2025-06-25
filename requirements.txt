@@ -1,0 +1,4 @@
+aiogram==3.3.0
+fastapi==0.110.1
+uvicorn==0.29.0
+openai==1.30.1
