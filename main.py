@@ -137,15 +137,19 @@ async def successful_payment_handler(msg: types.Message):
         await msg.answer(f"Ava got confused 😳 Error: {e}")
         
 # ✅ MAIN CHAT
+import asyncio  # Add this at the top of your file
+
+...
+
 @router.message()
 async def chat_handler(msg: types.Message):
     try:
         user_input = msg.text
 
-        # Show "typing" action
+        # Ava is typing... 🥺
         await bot.send_chat_action(msg.chat.id, action="typing")
 
-        # Call OpenAI
+        # Generate OpenAI response
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -164,8 +168,12 @@ async def chat_handler(msg: types.Message):
                 {"role": "user", "content": user_input}
             ]
         )
-
         reply = response["choices"][0]["message"]["content"]
+
+        # 🕐 Add typing delay based on length
+        delay = min(len(reply) * 0.035, 4)  # Max delay capped to 4 seconds
+        await asyncio.sleep(delay)
+
         await msg.answer(reply)
 
     except Exception as e:
