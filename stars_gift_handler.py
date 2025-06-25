@@ -17,7 +17,7 @@ gifts = [
     {"emoji": "💄", "name": "Lipstick", "price": 1500},
     {"emoji": "💐", "name": "Bouquet", "price": 500},
     {"emoji": "🌹", "name": "Rose", "price": 250},
-    {"emoji": "🍫", "name": "Chocolate", "price": 10},
+    {"emoji": "🍫", "name": "Chocolate", "price": 2},
 ]
 
 # ✅ Telegram pricing
