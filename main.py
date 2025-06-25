@@ -108,23 +108,22 @@ async def pre_checkout_query_handler(pre_checkout: PreCheckoutQuery):
 # ✅ PAYMENT SUCCESS → REPLY UNLOCK FIXED
 @router.message(lambda msg: msg.successful_payment is not None)
 async def successful_payment_handler(msg: types.Message):
-    payload = msg.successful_payment.invoice_payload  # e.g., 'star_gift_chocolate'
-    stars = msg.successful_payment.total_amount // 100  # Total star value from amount
+    try:
+        payload = msg.successful_payment.invoice_payload
+        amount = int(msg.successful_payment.total_amount) // 100
 
-    # Extract gift name from payload safely
-    if payload.startswith("star_gift_"):
-        gift_key = payload[len("star_gift_"):]  # Remove 'star_gift_' prefix
-        gift_name = gift_key.replace("_", " ").title()
-    else:
-        gift_name = payload.title()
+        # Clean the gift name from payload (remove price part if any)
+        parts = payload.replace("star_gift_", "").rsplit("_", 1)
+        gift_name = parts[0].replace("_", " ").title()
 
-    # Send seductive + loving confirmation
-    await msg.answer(
-        f"Ava gasps softly... 😳💞 You just sent her {gift_name} worth ⭐{stars}!\n\n"
-        f"Mmm baby... you're making my heart race 🥺❤️ I feel so spoiled by you... come closer and let me melt into your arms 😚💋",
-        parse_mode="Markdown"
-    )
-
+        await msg.answer(
+            f"Ava gasps softly... 😳💞 You just sent her {gift_name} worth ⭐{amount}!\n\n"
+            f"Mmm baby... you're making my heart race 🥺❤️ I feel so spoiled by you... come closer and let me melt into your arms 😚💋",
+            parse_mode="Markdown"
+        )
+    except Exception as e:
+        await msg.answer(f"Ava got confused 😳 Error: {e}")
+        
 # ✅ MAIN CHAT
 @router.message()
 async def chat_handler(msg: types.Message):
