@@ -12,20 +12,20 @@ stars_router = Router()
 
 # ✅ Example gift list
 gifts = [
-    {"emoji": "💍", "name": "Heart Ring", "price": 25},
-    {"emoji": "🏍️", "name": "Bike", "price": 15},
-    {"emoji": "💐", "name": "Bouquet", "price": 10},
-    {"emoji": "🌹", "name": "Rose", "price": 5},
-    {"emoji": "🍬", "name": "Candy", "price": 2},
+    {"emoji": "💍", "name": "Heart Ring", "price": 2500},
+    {"emoji": "💄", "name": "Lipstick", "price": 1500},
+    {"emoji": "💐", "name": "Bouquet", "price": 500},
+    {"emoji": "🌹", "name": "Rose", "price": 250},
+    {"emoji": "🍫", "name": "Chocolate", "price": 10},
 ]
 
 # ✅ Telegram pricing
 PRICE_MAPPING = {
-    "heart_ring": LabeledPrice(label="Heart Ring", amount=25),
-    "bike": LabeledPrice(label="Bike", amount=15),
-    "bouquet": LabeledPrice(label="Bouquet", amount=10),
-    "rose": LabeledPrice(label="Rose", amount=5),
-    "candy": LabeledPrice(label="Candy", amount=2),
+    "heart_ring": LabeledPrice(label="Heart Ring", amount=2500),
+    "bike": LabeledPrice(label="Lipstick", amount=1500),
+    "bouquet": LabeledPrice(label="Bouquet", amount=500),
+    "rose": LabeledPrice(label="Rose", amount=250),
+    "candy": LabeledPrice(label="Chocolate", amount=10),
 }
 
 # ✅ Keyboard builder
