@@ -7,9 +7,10 @@ from aiogram.dispatcher.router import Router
 from aiogram.filters import Command
 from aiogram.types import Update
 from openai import OpenAI
+
 from stars_gift_handler import stars_router  # ✅ Gift route
 
-# ✅ Hardcoded values
+# ✅ Hardcoded webhook
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 WEBHOOK_URL = "https://chatwithavabot-production.up.railway.app/webhook"
@@ -19,8 +20,8 @@ if not BOT_TOKEN:
 if not OPENAI_API_KEY:
     raise Exception("OPENAI_API_KEY not set!")
 
-# ✅ OpenAI client using new API format
-openai_client = OpenAI(api_key=OPENAI_API_KEY)
+# ✅ Set up OpenAI client
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 # ✅ Telegram bot setup
 bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.HTML)
@@ -44,7 +45,7 @@ async def start_cmd(msg: types.Message):
 async def chat_handler(msg: types.Message):
     try:
         user_input = msg.text
-        response = openai_client.chat.completions.create(
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {
