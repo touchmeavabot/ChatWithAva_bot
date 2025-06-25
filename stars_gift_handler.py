@@ -7,6 +7,7 @@ from aiogram.types import (
     Message
 )
 from aiogram.filters import Command
+from aiogram.fsm.context import FSMContext  # ✅ Required for reset command
 
 stars_router = Router()
 
@@ -63,17 +64,16 @@ async def process_star_gift(callback: types.CallbackQuery, bot: Bot):
         await callback.answer()
 
         await bot.send_invoice(
-    chat_id=callback.from_user.id,
-    title=gift_key.replace("_", " ").title(),
-    description=f"A special gift for Ava 💖",
-    payload=f"star_gift_{gift_key}",
-    provider_token="STARS",  # ✅ Official token for Telegram Stars
-    currency="XTR",  # ✅ Not USD, must be XTR for Stars
-    prices=[PRICE_MAPPING[gift_key]],
-    start_parameter="gift",
-    is_flexible=False
-)
-        
+            chat_id=callback.from_user.id,
+            title=gift_key.replace("_", " ").title(),
+            description=f"A special gift for Ava 💖",
+            payload=f"star_gift_{gift_key}",
+            provider_token="STARS",  # ✅ Official token for Telegram Stars
+            currency="XTR",  # ✅ Must be XTR for Telegram Stars
+            prices=[PRICE_MAPPING[gift_key]],
+            start_parameter="gift",
+            is_flexible=False
+        )
     except Exception as e:
         await callback.message.answer(f"Error while processing gift: {e}")
 
@@ -92,7 +92,13 @@ async def payment_success(message: types.Message):
         f"\"Mmm… you're spoiling me baby 😩❤️ I love it!\""
     )
 
-# ✅ Fallback handler (always keep at the end)
+# ✅ /reset command to clear user state
+@stars_router.message(Command("reset"))
+async def reset_user_state(message: Message, state: FSMContext):
+    await state.clear()
+    await message.answer("🔄 Your session has been reset. You can now start fresh!")
+
+# ✅ Fallback for all other messages
 @stars_router.message()
 async def fallback_echo(message: Message):
     await message.answer("✅ Ava received your message!")
