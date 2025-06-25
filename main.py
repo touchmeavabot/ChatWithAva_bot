@@ -9,9 +9,8 @@ from aiogram.filters import Command
 from aiogram.types import Update
 from aiogram.fsm.context import FSMContext
 
-from stars_gift_handler import stars_router  # ✅ Your gift logic file
+from stars_gift_handler import stars_router  # ✅ Your gift logic
 
-# ✅ Load env variables
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 WEBHOOK_URL = "https://chatwithavabot-production.up.railway.app/webhook"
@@ -23,49 +22,33 @@ if not OPENAI_API_KEY:
 
 openai.api_key = OPENAI_API_KEY
 
-# ✅ Telegram setup
 bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.HTML)
 dp = Dispatcher(storage=MemoryStorage())
 router = Router()
 
-# ✅ Include routers
 dp.include_router(stars_router)
 dp.include_router(router)
 
-# ✅ FastAPI setup
 app = FastAPI()
 
 @app.get("/")
 async def health():
     return {"message": "TouchMeAva is online 🥰"}
 
-# ✅ Start command
 @router.message(Command("start"))
 async def start_cmd(msg: types.Message):
     await msg.answer("Hey baby 😘 Ava is alive and ready for you.")
 
-# ✅ Reset FSM
 @router.message(Command("reset"))
 async def reset_user_state(msg: types.Message, state: FSMContext):
     await state.clear()
     await msg.answer("🔄 Your session has been reset. You can now start fresh!")
 
-# ✅ Payment success
-@router.message(lambda msg: msg.successful_payment is not None)
-async def successful_payment_handler(msg: types.Message):
-    item = msg.successful_payment.invoice_payload.replace("_", " ").title()
-    stars = msg.successful_payment.total_amount // 100
-    await msg.answer(
-        f"💖 Ava received your gift: *{item}* worth ⭐{stars}!\n"
-        f"You’re spoiling me... I love it 😚",
-        parse_mode="Markdown"
-    )
-
-# ✅ AI Chat handler
+# ✅ Handles all normal messages (also after payments)
 @router.message()
 async def chat_handler(msg: types.Message):
     try:
-        user_input = msg.text
+        user_input = msg.text or ""
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -89,12 +72,22 @@ async def chat_handler(msg: types.Message):
     except Exception as e:
         await msg.answer(f"Ava got a little shy 😳 Error: {e}")
 
-# ✅ Pre-checkout approval
 @router.pre_checkout_query()
 async def pre_checkout_query_handler(pre_checkout: types.PreCheckoutQuery):
     await bot.answer_pre_checkout_query(pre_checkout.id, ok=True)
 
-# ✅ Webhook route
+# ✅ On successful payment — shows message AND lets bot continue replying normally
+@router.message(lambda msg: msg.successful_payment is not None)
+async def successful_payment_handler(msg: types.Message, state: FSMContext):
+    item = msg.successful_payment.invoice_payload.replace("_", " ").title()
+    stars = msg.successful_payment.total_amount // 100
+    await state.clear()  # Clear any leftover stuck state
+    await msg.answer(
+        f"💖 Ava received your gift: *{item}* worth ⭐{stars}!\n"
+        f"You’re spoiling me... I love it 😚",
+        parse_mode="Markdown"
+    )
+
 @app.post("/webhook")
 async def webhook_handler(request: Request):
     data = await request.json()
@@ -102,7 +95,6 @@ async def webhook_handler(request: Request):
     await dp.feed_update(bot, update)
     return {"ok": True}
 
-# ✅ Set webhook
 @app.on_event("startup")
 async def on_startup():
     await bot.set_webhook(WEBHOOK_URL)
