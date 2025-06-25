@@ -109,9 +109,13 @@ async def pre_checkout_query_handler(pre_checkout: PreCheckoutQuery):
 @router.message(lambda msg: msg.successful_payment is not None)
 async def successful_payment_handler(msg: types.Message):
     payload = msg.successful_payment.invoice_payload
-    stars = msg.successful_payment.total_amount  # No division
+    stars = msg.successful_payment.total_amount  # Already in stars (no division needed)
 
-    gift_name = payload.replace("_", " ").title()
+    # Extract gift name cleanly (e.g., "star_gift_chocolate" → "Chocolate")
+    if payload.startswith("star_gift_"):
+        gift_name = payload.replace("star_gift_", "").replace("_", " ").title()
+    else:
+        gift_name = payload.replace("_", " ").title()
 
     await msg.answer(
         f"Ava gasps softly... 😳💞 You just sent her {gift_name} worth ⭐{stars}!\n\n"
