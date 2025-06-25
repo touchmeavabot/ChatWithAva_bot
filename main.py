@@ -8,6 +8,7 @@ from aiogram.dispatcher.router import Router
 from aiogram.filters import Command
 from aiogram.types import Update, LabeledPrice, PreCheckoutQuery
 from aiogram.fsm.context import FSMContext
+from utils import smart_flirty_line
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -194,11 +195,16 @@ async def chat_handler(msg: types.Message):
         )
         reply = response["choices"][0]["message"]["content"]
 
-        # 🕐 Add typing delay based on length
-        delay = min(len(reply) * 0.035, 4)  # Max delay capped to 4 seconds
-        await asyncio.sleep(delay)
+# 🧠 Add smart flirty mood-based surprise
+flirty = smart_flirty_line(msg.text)
+if flirty:
+    reply += "\n\n" + flirty
 
-        await msg.answer(reply)
+# 🕐 Add typing delay based on length
+delay = min(len(reply) * 0.035, 4)
+await asyncio.sleep(delay)
+
+await msg.answer(reply)
 
     except Exception as e:
         await msg.answer(f"Ava got a little shy 😳 Error: {e}")
