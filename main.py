@@ -1,5 +1,7 @@
 import os
 import openai
+import datetime
+import asyncio
 from fastapi import FastAPI, Request
 from aiogram import Bot, Dispatcher, types
 from aiogram.enums import ParseMode
@@ -9,7 +11,15 @@ from aiogram.filters import Command
 from aiogram.types import Update, LabeledPrice, PreCheckoutQuery
 from aiogram.fsm.context import FSMContext
 from utils import smart_flirty_line
+from collections import defaultdict
 
+# Ava Reminder: Track last active time of each user
+user_last_active = defaultdict(lambda: datetime.datetime.utcnow())
+
+# Ava Reminder: Track next reminder time for each user
+user_next_reminder = defaultdict(lambda: None)
+
+# Environment Variables
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 WEBHOOK_URL = "https://chatwithavabot-production.up.railway.app/webhook"
@@ -174,10 +184,16 @@ async def chat_handler(msg: types.Message):
     try:
         user_input = msg.text
 
-        # Show typing action immediately
+        # ✅ Update last active timestamp
+        user_last_active[msg.from_user.id] = datetime.datetime.utcnow()
+
+        # ✅ Reset Ava's reminder cycle for this user
+        user_next_reminder[msg.from_user.id] = None
+
+        # Ava is typing...
         await bot.send_chat_action(msg.chat.id, action="typing")
 
-        # Generate response from Ava
+        # 🧠 Generate Ava's AI reply
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -202,15 +218,16 @@ async def chat_handler(msg: types.Message):
 
         reply = response["choices"][0]["message"]["content"]
 
-        # Add flirty surprise
+        # 🔥 Add flirty surprise if triggered
         flirty = smart_flirty_line(msg.text)
         if flirty:
             reply += "\n\n" + flirty
 
-        # Typing delay based on realistic rhythm
-        typing_delay = min(max(len(reply) * 0.065, 3.5), 10)  # Between 3.5s to 10s
+        # ⏳ Typing delay logic
+        typing_delay = min(max(len(reply) * 0.065, 3.5), 10)
         await asyncio.sleep(typing_delay)
 
+        # 💬 Send Ava's reply
         await msg.answer(reply)
 
     except Exception as e:
