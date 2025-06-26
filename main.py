@@ -375,9 +375,12 @@ async def sticker_handler(msg: types.Message):
 
         await msg.answer(reply)
 
-    except Exception as e:
-        await msg.answer(f"Ava got confused 😅 (Error: {e})")
-        print(f"❌ Sticker handler error: {e}")
+    import traceback
+
+except Exception as e:
+    print("Sticker handler error:")
+    traceback.print_exc()
+    await msg.answer(f"Ava got a bit confused by that sticker 😅 (Error: {e})")
 # ✅ WEBHOOK
 @app.post("/webhook")
 async def webhook_handler(request: Request):
