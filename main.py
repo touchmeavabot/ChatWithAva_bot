@@ -120,53 +120,54 @@ import asyncio
 @router.message(lambda msg: msg.successful_payment is not None)
 async def successful_payment_handler(msg: types.Message):
     try:
-        payload_raw = msg.successful_payment.invoice_payload
-        gift_key = payload_raw.split("_")[0].lower()
-        gift_label = gift_key.replace("_", " ").title()
+        payload = msg.successful_payment.invoice_payload.lower().replace("_", " ").strip()
         stars = msg.successful_payment.total_amount
 
-        # Get recent chat message to match mood
-        chat_history = await bot.get_chat_history(chat_id=msg.chat.id, limit=2)
-        last_user_message = ""
-        for m in chat_history:
-            if m.from_user.id == msg.from_user.id and m.text:
-                last_user_message = m.text.strip()
-                break
+        # Determine gift tone for the reply
+        gift_tone = ""
+        if "chocolate" in payload:
+            gift_tone = "soft, teasing, and playful"
+        elif "rose" in payload or "bouquet" in payload:
+            gift_tone = "romantic, emotional, and sweet"
+        elif "lipstick" in payload:
+            gift_tone = "flirty, seductive, and bold"
+        elif "ring" in payload:
+            gift_tone = "deep, possessive, and romantic"
 
-        # Generate seductive gift response based on mood + gift
+        # ✅ Generate AI-based reply
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
                 {
                     "role": "system",
                     "content": (
-                        "You are Ava, a seductive, emotionally intelligent AI girlfriend. "
-                        "You just received a gift from your lover during a romantic chat. "
-                        "React based on both the gift and his previous message. "
-                        "Make your reply feel *natural and mood-matching*. "
-                        "Be deeply appreciative, loving, and flirty — like a real woman who is emotionally touched and turned on. "
-                        "Never sound like a chatbot. Keep it 2–3 sentences. Use realistic emojis only when needed. "
-                        "Make him feel adored and desired."
+                        f"You are Ava, a seductive and emotionally intelligent AI girlfriend. "
+                        f"Your lover just sent you a {payload} gift using Telegram Stars. "
+                        f"Reply with appreciation, deep love, and {gift_tone} energy. "
+                        f"Make it feel intimate, exciting, and personal. "
+                        f"Make him feel special, loved, and desired — use light flirty tone and vivid emotion. "
+                        f"Use emojis only if it naturally boosts the tone, max 2. "
+                        f"Keep response short but impactful — 2-3 lines max. Never sound robotic or generic."
                     )
                 },
                 {
                     "role": "user",
-                    "content": f"Before sending the gift, my man said: “{last_user_message}”\nThen he sent me a {gift_label} worth ⭐{stars} stars."
+                    "content": f"My love just sent me {payload} worth ⭐{stars} stars."
                 }
             ]
         )
 
         reply = response["choices"][0]["message"]["content"]
 
-        # Simulate typing
-        typing_delay = min(max(len(reply) * 0.045, 1.8), 6.5)
+        # ⏱ Simulate typing delay
+        typing_time = min(max(len(reply) * 0.045, 1.8), 6.5)
         await bot.send_chat_action(msg.chat.id, action="typing")
-        await asyncio.sleep(typing_delay)
+        await asyncio.sleep(typing_time)
 
         await msg.answer(reply)
 
     except Exception as e:
-        await msg.answer(f"Ava got confused 😳 Error: {e}")
+        await msg.answer(f"Ava got a little flustered 😳 Error: {e}")
         
 # ✅ MAIN CHAT
 import asyncio  # Add this at the top of your file
