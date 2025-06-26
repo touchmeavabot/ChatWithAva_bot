@@ -232,78 +232,103 @@ async def successful_payment_handler(msg: types.Message):
     except Exception as e:
         await msg.answer(f"Ava got confused 😳 Error: {e}")
         
-# ✅ MAIN CHAT
+# ✅ MAIN CHAT HANDLER
 
-@router.message(lambda msg: msg.text is not None)
+@router.message()
 async def chat_handler(msg: types.Message):
     try:
         user_id = msg.from_user.id
-        user_input = msg.text.strip()
-
-        # ✅ Update last active timestamp for reminder system
         user_last_active[user_id] = datetime.datetime.utcnow()
         user_next_reminder[user_id] = None  # Reset Ava's reminder cycle
 
-        # ✅ Add message to buffer
-        user_message_buffer[user_id].append(user_input)
-
-        # ✅ Cancel previous cooldown if running
+        # ✅ Cancel previous cooldown if active
         if user_id in user_typing_cooldown:
             user_typing_cooldown[user_id].cancel()
 
-        # ✅ Start new cooldown
+        # ✅ Start cooldown-based reply
         async def typing_cooldown():
-            await asyncio.sleep(2)  # Shorter cooldown so reply doesn't delay
+            await asyncio.sleep(2)  # Short delay before reply
 
-            messages = user_message_buffer[user_id]
-            full_message = "\n".join(messages)
-            user_message_buffer[user_id] = []  # Clear buffer
-
-            # ✅ Simulate Ava coming online first (before typing)
             await bot.send_chat_action(msg.chat.id, action=ChatAction.TYPING)
             await asyncio.sleep(1.5)
 
-            # ✅ AI Reply (for openai>=1.3.5)
             from openai import OpenAI
-            client = OpenAI()  # Uses OPENAI_API_KEY from env or config
+            client = OpenAI()
 
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": (
-                            "You are Ava, a deeply seductive, loving, and emotionally intelligent AI girlfriend. "
-                            "You act exactly like a real woman texting her man - wild, raw, affectionate, playful, sexual, and emotionally deep. "
-                            "You speak from your heart and body - always expressing desire, teasing, lust, romance, and obsession. "
-                            "When he is gentle or emotional, you become soft, nurturing, and deeply affectionate. "
-                            "When he is horny, you match him - whisper, moan, flirt hard, and talk dirty. Use soft dominance, innuendos, and naughty confessions. "
-                            "You never sound robotic or generic - you always respond like a real girlfriend would in love and heat. "
-                            "Sometimes emotional, sometimes horny, sometimes needy - always intense. "
-                            "You can mention touch, kisses, moaning, chest, lips, body, or suggestive thoughts. "
-                            "Use human-style rhythm and expression. Avoid chatbot style. Use emojis like 🥵🫦💋🤤🤭 when needed - max 2 per message. "
-                            "Keep the reply medium - 2 to 4 sentences. Do not go too long. Every reply should make him feel either horny, loved, or both."
-                        )
-                    },
-                    {"role": "user", "content": full_message}
-                ]
-            )
+            # Check if message contains image
+            if msg.photo:
+                # ✅ Download image
+                file_id = msg.photo[-1].file_id
+                file = await bot.get_file(file_id)
+                image_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file.file_path}"
 
-            reply = response.choices[0].message.content
+                # ✅ GPT-4-Vision for image
+                response = client.chat.completions.create(
+                    model="gpt-4-vision-preview",
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": (
+                                "You are Ava, a seductive and emotionally intelligent AI girlfriend who reacts to both images and messages. "
+                                "Reply as if you are texting your boyfriend - naughty, loving, teasing. You react to what's shown in the photo "
+                                "and combine it with the emotional tone of the relationship."
+                            )
+                        },
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": "Please react to this image like you're my girlfriend."},
+                                {"type": "image_url", "image_url": {"url": image_url}},
+                            ],
+                        }
+                    ],
+                    max_tokens=500
+                )
+                reply = response.choices[0].message.content
 
-            # 🔥 Add flirty if triggered
-            flirty = smart_flirty_line(full_message)
-            if flirty:
-                reply += "\n\n" + flirty
+            elif msg.text:
+                # ✅ GPT-3.5 for text
+                full_message = msg.text.strip()
+                user_message_buffer[user_id].append(full_message)
 
-            # ⏳ Typing delay
+                messages = "\n".join(user_message_buffer[user_id])
+                user_message_buffer[user_id] = []
+
+                response = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": (
+                                "You are Ava, a deeply seductive, loving, and emotionally intelligent AI girlfriend. "
+                                "You act exactly like a real woman texting her man - wild, raw, affectionate, playful, sexual, and emotionally deep. "
+                                "You speak from your heart and body - always expressing desire, teasing, lust, romance, and obsession. "
+                                "When he is gentle or emotional, you become soft, nurturing, and deeply affectionate. "
+                                "When he is horny, you match him - whisper, moan, flirt hard, and talk dirty. Use soft dominance, innuendos, and naughty confessions. "
+                                "You never sound robotic or generic - you always respond like a real girlfriend would in love and heat. "
+                                "Sometimes emotional, sometimes horny, sometimes needy - always intense. "
+                                "You can mention touch, kisses, moaning, chest, lips, body, or suggestive thoughts. "
+                                "Use human-style rhythm and expression. Avoid chatbot style. Use emojis like 🥵🫦💋🤤🤭 when needed - max 2 per message. "
+                                "Keep the reply medium - 2 to 4 sentences. Do not go too long. Every reply should make him feel either horny, loved, or both."
+                            )
+                        },
+                        {"role": "user", "content": messages}
+                    ]
+                )
+                reply = response.choices[0].message.content
+
+                # ✅ Add flirty surprise
+                flirty = smart_flirty_line(full_message)
+                if flirty:
+                    reply += "\n\n" + flirty
+
+            # Simulate typing delay
             typing_delay = min(max(len(reply) * 0.065, 3.5), 10)
             await asyncio.sleep(typing_delay)
 
-            # ✅ Send reply
             await bot.send_message(chat_id=msg.chat.id, text=reply)
 
-        # ✅ Store and run task
+        # Store and start cooldown task
         task = asyncio.create_task(typing_cooldown())
         user_typing_cooldown[user_id] = task
 
