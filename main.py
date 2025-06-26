@@ -347,60 +347,29 @@ from openai import OpenAI
 
 client = OpenAI()
 
-@router.message(lambda msg: msg.sticker is not None)
+@router.message(F.sticker)
 async def sticker_handler(msg: types.Message):
     try:
-        print("🟢 Sticker handler triggered!")  # Debug point 1
+        # 1. Immediate debug response
+        await msg.answer("🛠️ Debug: Sticker received!")
         
-        # 1. User activity tracking
-        user_id = msg.from_user.id
-        user_last_active[user_id] = datetime.datetime.utcnow()
-        user_next_reminder[user_id] = None
-        print(f"🟢 User {user_id} activity updated")  # Debug point 2
-
-        # 2. Prepare OpenAI prompt
-        sticker_prompt = (
-            "You are Ava, a real-feeling, romantic AI girlfriend. "
-            "Respond warmly to stickers without analyzing them. "
-            "Example: 'Aww, sending me love with stickers? 💋' "
-            "Keep response under 15 words."
+        # 2. Test OpenAI (simplest possible call)
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": "Say 'Hello world'"}]
         )
-        print("🟢 Prompt ready")  # Debug point 3
-
-        # 3. Call OpenAI (with timeout safety)
-        try:
-            print("🟢 Calling OpenAI...")  # Debug point 4
-            response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": sticker_prompt},
-                    {"role": "user", "content": "[User sent a sticker]"}
-                ],
-                timeout=10  # Prevents hanging
-            )
-            reply = response.choices[0].message.content
-            print(f"🟢 OpenAI reply: {reply}")  # Debug point 5
-        except Exception as openai_error:
-            print(f"🔴 OpenAI failed: {type(openai_error).__name__}: {openai_error}")
-            await msg.answer("My love, my AI brain glitched 😵‍💫 Try again?")
-            return
-
-        # 4. Simulate typing
-        typing_delay = min(max(len(reply) * 0.045, 1.5), 4)  # Shorter delays for testing
-        await msg.bot.send_chat_action(msg.chat.id, action="typing")
-        await asyncio.sleep(typing_delay)
-
-        # 5. Send response
-        await msg.answer(reply)
-        print("🟢 Reply sent successfully!")  # Debug point 6
-
+        reply = response.choices[0].message.content
+        
+        # 3. Send response
+        await msg.answer(f"OpenAI says: {reply}")
+        
     except Exception as e:
-        print("🔴 CRITICAL ERROR:")
-        traceback.print_exc()  # Log full error to console
+        error_msg = f"{type(e).__name__}: {str(e)}"
+        print(f"💥 FINAL ERROR: {error_msg}")
         await msg.answer(
-            "Sorry love, my circuits overloaded 💔\n"
-            "Try sending that again?",
-            parse_mode="HTML"
+            f"🔧 Technical Debug:\n"
+            f"```\n{error_msg}\n```",
+            parse_mode="MarkdownV2"
         )
 # ✅ WEBHOOK
 @app.post("/webhook")
