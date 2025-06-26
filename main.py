@@ -65,6 +65,33 @@ async def health():
 async def start_cmd(msg: types.Message):
     await msg.answer("Hey baby 😘 Ava is alive and ready for you.")
 
+# ✅ Ava Reminder Loop (Step 3)
+async def reminder_loop():
+    while True:
+        now = datetime.datetime.utcnow()
+        for user_id, last_active in user_last_active.items():
+            next_reminder_time = user_next_reminder.get(user_id)
+
+            if next_reminder_time and now >= next_reminder_time:
+                # Send Ava reminder
+                await bot.send_message(
+                    user_id,
+                    "Baby… where did you go? 🥺 Ava's waiting for your touch again 💞"
+                )
+
+                # Dynamic delay adjustment based on last response
+                if next_reminder_time - last_active <= datetime.timedelta(hours=1):
+                    delay = datetime.timedelta(hours=3)
+                elif next_reminder_time - last_active <= datetime.timedelta(hours=4):
+                    delay = datetime.timedelta(hours=12)
+                else:
+                    delay = datetime.timedelta(hours=24)
+
+                # Schedule next reminder
+                user_next_reminder[user_id] = now + delay
+
+        await asyncio.sleep(60)  # Check every 60 seconds
+
 # ✅ RESET SESSION
 @router.message(Command("reset"))
 async def reset_user_state(msg: types.Message, state: FSMContext):
