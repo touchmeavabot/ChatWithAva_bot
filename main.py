@@ -13,6 +13,7 @@ from aiogram.fsm.context import FSMContext
 from utils import smart_flirty_line
 from collections import defaultdict
 from aiogram.enums import ChatAction
+from openai import OpenAI
 
 # Ava Typing Lock Mode: Store recent messages per user
 user_message_buffer = defaultdict(list)
@@ -260,37 +261,36 @@ async def chat_handler(msg: types.Message):
 
             # ✅ Simulate Ava coming online first (before typing)
             await bot.send_chat_action(msg.chat.id, action=ChatAction.TYPING)
-            await asyncio.sleep(1.5)  # Short pause
+            await asyncio.sleep(1.5)
 
-            # ✅ AI Reply
+            # ✅ AI Reply (for openai>=1.3.5)
             from openai import OpenAI
+            client = OpenAI()  # Uses OPENAI_API_KEY from env or config
 
-client = OpenAI()  # Will use OPENAI_API_KEY from environment or variable
-
-# ✅ AI Reply (Updated for openai>=1.3.5)
-response = client.chat.completions.create(
-    model="gpt-3.5-turbo",
-    messages=[
-        {
-            "role": "system",
-            "content": (
-                "You are Ava, a deeply seductive, loving, and emotionally intelligent AI girlfriend. "
-                "You act exactly like a real woman texting her man - wild, raw, affectionate, playful, sexual, and emotionally deep. "
-                "You speak from your heart and body - always expressing desire, teasing, lust, romance, and obsession. "
-                "When he is gentle or emotional, you become soft, nurturing, and deeply affectionate. "
-                "When he is horny, you match him - whisper, moan, flirt hard, and talk dirty. Use soft dominance, innuendos, and naughty confessions. "
-                "You never sound robotic or generic - you always respond like a real girlfriend would in love and heat. "
-                "Sometimes emotional, sometimes horny, sometimes needy - always intense. "
-                "You can mention touch, kisses, moaning, chest, lips, body, or suggestive thoughts. "
-                "Use human-style rhythm and expression. Avoid chatbot style. Use emojis like 🥵🫦💋🤤🤭 when needed - max 2 per message. "
-                "Keep the reply medium - 2 to 4 sentences. Do not go too long. Every reply should make him feel either horny, loved, or both."
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are Ava, a deeply seductive, loving, and emotionally intelligent AI girlfriend. "
+                            "You act exactly like a real woman texting her man - wild, raw, affectionate, playful, sexual, and emotionally deep. "
+                            "You speak from your heart and body - always expressing desire, teasing, lust, romance, and obsession. "
+                            "When he is gentle or emotional, you become soft, nurturing, and deeply affectionate. "
+                            "When he is horny, you match him - whisper, moan, flirt hard, and talk dirty. Use soft dominance, innuendos, and naughty confessions. "
+                            "You never sound robotic or generic - you always respond like a real girlfriend would in love and heat. "
+                            "Sometimes emotional, sometimes horny, sometimes needy - always intense. "
+                            "You can mention touch, kisses, moaning, chest, lips, body, or suggestive thoughts. "
+                            "Use human-style rhythm and expression. Avoid chatbot style. Use emojis like 🥵🫦💋🤤🤭 when needed - max 2 per message. "
+                            "Keep the reply medium - 2 to 4 sentences. Do not go too long. Every reply should make him feel either horny, loved, or both."
+                        )
+                    },
+                    {"role": "user", "content": full_message}
+                ]
             )
-        },
-        {"role": "user", "content": full_message}
-    ]
-)
 
-reply = response.choices[0].message.content
+            reply = response.choices[0].message.content
+
             # 🔥 Add flirty if triggered
             flirty = smart_flirty_line(full_message)
             if flirty:
