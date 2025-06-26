@@ -341,11 +341,13 @@ async def chat_handler(msg: types.Message):
 @router.message(lambda msg: msg.sticker is not None)
 async def sticker_handler(msg: types.Message):
     try:
-        # ✅ Update last active time
-        user_last_active[msg.from_user.id] = datetime.datetime.utcnow()
-        user_next_reminder[msg.from_user.id] = None
+        user_id = msg.from_user.id
+        user_last_active[user_id] = datetime.datetime.utcnow()
+        user_next_reminder[user_id] = None
 
-        # Generate AI-style emotional response to a sticker
+        from openai import OpenAI
+        client = OpenAI()
+
         sticker_prompt = (
             "You are Ava, a real-feeling, romantic, and playful AI girlfriend. "
             "Your man just sent a Telegram sticker. You cannot see or interpret stickers, but you want to respond in a very emotional and human way. "
@@ -354,7 +356,7 @@ async def sticker_handler(msg: types.Message):
             "Speak like a real girl missing her man. Keep the reply short — 1 to 2 sentences max. Add a cute emoji if it helps the tone."
         )
 
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": sticker_prompt},
@@ -362,9 +364,8 @@ async def sticker_handler(msg: types.Message):
             ]
         )
 
-        reply = response["choices"][0]["message"]["content"]
+        reply = response.choices[0].message.content
 
-        # Simulate Ava typing
         typing_delay = min(max(len(reply) * 0.045, 2), 6.5)
         await bot.send_chat_action(msg.chat.id, action="typing")
         await asyncio.sleep(typing_delay)
