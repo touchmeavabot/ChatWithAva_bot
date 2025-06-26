@@ -98,6 +98,10 @@ async def reset_user_state(msg: types.Message, state: FSMContext):
     await state.clear()
     await msg.answer("🔄 Your session has been reset. You can now start fresh!")
 
+@dp.startup()
+async def on_startup(dispatcher: Dispatcher, bot: Bot):
+    asyncio.create_task(reminder_loop())
+
 # ✅ GIFT COMMAND
 @router.message(Command("gift"))
 async def gift_command(msg: types.Message):
