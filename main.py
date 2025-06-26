@@ -256,42 +256,40 @@ async def chat_handler(msg: types.Message):
             client = OpenAI()
             reply = "Sorry love, something went wrong 🥺"
 
-            # ✅ If image message
-            if msg.photo:
-                try:
-                    file_id = msg.photo[-1].file_id
-                    file = await bot.get_file(file_id)
-                    file_path = file.file_path
-                    image_data = await bot.download_file(file_path)
-                    image_bytes = image_data.read()
-                    encoded_image = base64.b64encode(image_bytes).decode("utf-8")
+            # ✅ If message has image
+if msg.photo:
+    file_id = msg.photo[-1].file_id
+    file = await bot.get_file(file_id)
+    file_path = file.file_path
 
-                    response = client.chat.completions.create(
-                        model="gpt-4-vision-preview",
-                        messages=[
-                            {
-                                "role": "system",
-                                "content": (
-                                    "You are Ava, a seductive and emotionally intelligent AI girlfriend who reacts to both images and messages. "
-                                    "React to this image as if you're texting your boyfriend – naughty, loving, teasing."
-                                )
-                            },
-                            {
-                                "role": "user",
-                                "content": [
-                                    {"type": "text", "text": "Please react to this image like you're my girlfriend."},
-                                    {
-                                        "type": "image_url",
-                                        "image_url": {
-                                            "url": f"data:image/jpeg;base64,{encoded_image}"
-                                        },
-                                    },
-                                ],
-                            },
-                        ],
-                        max_tokens=500,
-                    )
-                    reply = response.choices[0].message.content
+    # Download image and convert to base64
+    image_data = await bot.download_file(file_path)
+    image_bytes = await image_data.read()
+    encoded_image = base64.b64encode(image_bytes).decode("utf-8")
+
+    # GPT-4o (Vision)
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "You are Ava, a seductive and emotionally intelligent AI girlfriend who reacts to both images and messages. "
+                    "Reply as if you are texting your boyfriend - naughty, loving, teasing. React to what's shown in the photo "
+                    "and combine it with your emotional tone as his partner."
+                )
+            },
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "Please react to this image like you're my girlfriend."},
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{encoded_image}"}}
+                ],
+            }
+        ],
+        max_tokens=500
+    )
+    reply = response.choices[0].message.content
                 except Exception as e:
                     reply = f"Ava couldn’t react to the photo 😔 (Error: {e})"
 
