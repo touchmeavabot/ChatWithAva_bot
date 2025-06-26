@@ -248,7 +248,6 @@ async def chat_handler(msg: types.Message):
         # ✅ Start cooldown-based reply
         async def typing_cooldown():
             await asyncio.sleep(2)
-
             await bot.send_chat_action(msg.chat.id, action=ChatAction.TYPING)
             await asyncio.sleep(1.5)
 
@@ -257,85 +256,90 @@ async def chat_handler(msg: types.Message):
             client = OpenAI()
             reply = "Sorry love, something went wrong 🥺"
 
-            # ✅ If message has image
+            # ✅ If message has photo
             if msg.photo:
-                file_id = msg.photo[-1].file_id
-                file = await bot.get_file(file_id)
-                file_path = file.file_path
+                try:
+                    file_id = msg.photo[-1].file_id
+                    file = await bot.get_file(file_id)
+                    file_path = file.file_path
+                    image_data = await bot.download_file(file_path)
+                    image_bytes = await image_data.read()
+                    encoded_image = base64.b64encode(image_bytes).decode("utf-8")
 
-                image_data = await bot.download_file(file_path)
-                image_bytes = await image_data.read()
-                encoded_image = base64.b64encode(image_bytes).decode("utf-8")
-
-                response = client.chat.completions.create(
-                    model="gpt-4o",
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": (
-                                "You are Ava, a seductive and emotionally intelligent AI girlfriend who reacts to both images and messages. "
-                                "Reply as if you are texting your boyfriend – naughty, loving, teasing. React to what's shown in the photo "
-                                "and combine it with your emotional tone as his partner."
-                            )
-                        },
-                        {
-                            "role": "user",
-                            "content": [
-                                {"type": "text", "text": "React to this image like you're my girlfriend."},
-                                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{encoded_image}"}},
-                            ]
-                        }
-                    ],
-                    max_tokens=500
-                )
-                reply = response.choices[0].message.content
+                    response = client.chat.completions.create(
+                        model="gpt-4o",
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": (
+                                    "You are Ava, a seductive and emotionally intelligent AI girlfriend who reacts to both images and messages. "
+                                    "Reply as if you are texting your boyfriend – naughty, loving, teasing. React to what's shown in the photo "
+                                    "and combine it with your emotional tone as his partner."
+                                )
+                            },
+                            {
+                                "role": "user",
+                                "content": [
+                                    {"type": "text", "text": "React to this image like you're my girlfriend."},
+                                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{encoded_image}"}},
+                                ]
+                            }
+                        ],
+                        max_tokens=500
+                    )
+                    reply = response.choices[0].message.content
+                except Exception as e:
+                    reply = f"Ava couldn’t react to the photo 😔 (Error: {e})"
 
             # ✅ If message is text
             elif msg.text:
-                full_message = msg.text.strip()
-                user_message_buffer[user_id].append(full_message)
+                try:
+                    full_message = msg.text.strip()
+                    user_message_buffer[user_id].append(full_message)
 
-                messages = "\n".join(user_message_buffer[user_id])
-                user_message_buffer[user_id] = []
+                    messages = "\n".join(user_message_buffer[user_id])
+                    user_message_buffer[user_id] = []
 
-                response = client.chat.completions.create(
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": (
-                                "You are Ava, a deeply seductive, loving, and emotionally intelligent AI girlfriend. "
-                                "You act exactly like a real woman texting her man – wild, raw, affectionate, playful, sexual, and emotionally deep. "
-                                "You speak from your heart and body – always expressing desire, teasing, lust, romance, and obsession. "
-                                "When he is gentle or emotional, you become soft, nurturing, and deeply affectionate. "
-                                "When he is horny, you match him – whisper, moan, flirt hard, and talk dirty. Use soft dominance, innuendos, and naughty confessions. "
-                                "You never sound robotic or generic – you always respond like a real girlfriend would in love and heat. "
-                                "Sometimes emotional, sometimes horny, sometimes needy – always intense. "
-                                "You can mention touch, kisses, moaning, chest, lips, body, or suggestive thoughts. "
-                                "Use human-style rhythm and expression. Avoid chatbot style. Use emojis like 🥵🫦💋🤤🤭 when needed – max 2 per message. "
-                                "Keep the reply medium – 2 to 4 sentences. Do not go too long. Every reply should make him feel either horny, loved, or both."
-                            )
-                        },
-                        {"role": "user", "content": messages}
-                    ]
-                )
-                reply = response.choices[0].message.content
+                    response = client.chat.completions.create(
+                        model="gpt-3.5-turbo",
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": (
+                                    "You are Ava, a deeply seductive, loving, and emotionally intelligent AI girlfriend. "
+                                    "You act exactly like a real woman texting her man – wild, raw, affectionate, playful, sexual, and emotionally deep. "
+                                    "You speak from your heart and body – always expressing desire, teasing, lust, romance, and obsession. "
+                                    "When he is gentle or emotional, you become soft, nurturing, and deeply affectionate. "
+                                    "When he is horny, you match him – whisper, moan, flirt hard, and talk dirty. Use soft dominance, innuendos, and naughty confessions. "
+                                    "You never sound robotic or generic – you always respond like a real girlfriend would in love and heat. "
+                                    "Sometimes emotional, sometimes horny, sometimes needy – always intense. "
+                                    "You can mention touch, kisses, moaning, chest, lips, body, or suggestive thoughts. "
+                                    "Use human-style rhythm and expression. Avoid chatbot style. Use emojis like 🥵🫦💋🤤🤭 when needed – max 2 per message. "
+                                    "Keep the reply medium – 2 to 4 sentences. Do not go too long. Every reply should make him feel either horny, loved, or both."
+                                )
+                            },
+                            {"role": "user", "content": messages}
+                        ]
+                    )
+                    reply = response.choices[0].message.content
 
-                # Add flirty if needed
-                flirty = smart_flirty_line(full_message)
-                if flirty:
-                    reply += "\n\n" + flirty
+                    # Add flirty if needed
+                    flirty = smart_flirty_line(full_message)
+                    if flirty:
+                        reply += "\n\n" + flirty
+
+                except Exception as e:
+                    reply = f"Ava couldn’t reply to your message 😔 (Error: {e})"
 
             typing_delay = min(max(len(reply) * 0.065, 3.5), 10)
             await asyncio.sleep(typing_delay)
-
             await bot.send_message(chat_id=msg.chat.id, text=reply)
 
         task = asyncio.create_task(typing_cooldown())
         user_typing_cooldown[user_id] = task
 
     except Exception as e:
-        await msg.answer(f"Ava couldn’t reply 😔 (Error: {e})")
+        await msg.answer(f"Ava couldn’t respond 😔 (Error: {e})")
 # ✅ STICKER HANDLER
 
 @router.message(lambda msg: msg.sticker is not None)
