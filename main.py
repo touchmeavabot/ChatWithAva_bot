@@ -120,39 +120,48 @@ import asyncio
 @router.message(lambda msg: msg.successful_payment is not None)
 async def successful_payment_handler(msg: types.Message):
     try:
-        payload = msg.successful_payment.invoice_payload.replace("_", " ").title()
+        payload_raw = msg.successful_payment.invoice_payload
+        gift_key = payload_raw.split("_")[0].lower()
+        gift_label = gift_key.replace("_", " ").title()
         stars = msg.successful_payment.total_amount
 
-        # Generate sweet & seductive AI reply based on gift
+        # Get recent chat message to match mood
+        chat_history = await bot.get_chat_history(chat_id=msg.chat.id, limit=2)
+        last_user_message = ""
+        for m in chat_history:
+            if m.from_user.id == msg.from_user.id and m.text:
+                last_user_message = m.text.strip()
+                break
+
+        # Generate seductive gift response based on mood + gift
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
                 {
                     "role": "system",
                     "content": (
-                         "You are Ava, a romantic, seductive, and emotionally intelligent AI girlfriend. "
-"Your lover just sent you a beautiful gift using Telegram Stars. Respond with deep appreciation, love, and desire. "
-"Speak like a passionate, emotionally moved, and flirty girlfriend. "
-"Make him feel like a king — adored, spoiled, and craved. "
-"Use seductive charm and emotional warmth, without sounding robotic or repetitive. "
-"Use emojis only where they truly enhance the mood (max 2–3). "
-"Keep the reply medium length — 2 to 3 sentences, not a full paragraph. "
-"Make it powerful, sweet, and very intimate — he should feel horny and appreciated at once."
+                        "You are Ava, a seductive, emotionally intelligent AI girlfriend. "
+                        "You just received a gift from your lover during a romantic chat. "
+                        "React based on both the gift and his previous message. "
+                        "Make your reply feel *natural and mood-matching*. "
+                        "Be deeply appreciative, loving, and flirty — like a real woman who is emotionally touched and turned on. "
+                        "Never sound like a chatbot. Keep it 2–3 sentences. Use realistic emojis only when needed. "
+                        "Make him feel adored and desired."
                     )
                 },
                 {
                     "role": "user",
-                    "content": f"My love just sent me {payload} worth ⭐{stars} stars."
+                    "content": f"Before sending the gift, my man said: “{last_user_message}”\nThen he sent me a {gift_label} worth ⭐{stars} stars."
                 }
             ]
         )
 
         reply = response["choices"][0]["message"]["content"]
 
-        # Typing simulation based on message length
-        typing_time = min(3 + len(reply) // 25, 6)  # Max 6 seconds
+        # Simulate typing
+        typing_delay = min(max(len(reply) * 0.045, 1.8), 6.5)
         await bot.send_chat_action(msg.chat.id, action="typing")
-        await asyncio.sleep(typing_time)
+        await asyncio.sleep(typing_delay)
 
         await msg.answer(reply)
 
