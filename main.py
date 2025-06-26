@@ -124,18 +124,10 @@ async def successful_payment_handler(msg: types.Message):
         stars = msg.successful_payment.total_amount
         gift_name = payload  # e.g. "Chocolate", "Lipstick"
 
-        # Capture recent user message to personalize reply (if applicable)
-        history = await bot.get_chat_history(chat_id=msg.chat.id, limit=3)
-        last_user_msg = None
-        for m in history:
-            if m.from_user.id == msg.from_user.id and m.text:
-                last_user_msg = m.text
-                break
 
         # Create context-aware prompt
         user_prompt = (
             f"My love just sent me {gift_name} worth ⭐{stars} stars."
-            + (f" He asked: {last_user_msg}" if last_user_msg else "")
         )
 
         # Generate AI reply
