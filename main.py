@@ -249,7 +249,7 @@ async def chat_handler(msg: types.Message):
         if user_id in user_typing_cooldown:
             user_typing_cooldown[user_id].cancel()
 
-                # ✅ Start new cooldown
+        # ✅ Start new cooldown
         async def typing_cooldown():
             await asyncio.sleep(6)  # Wait 6 sec of no typing
 
@@ -257,10 +257,10 @@ async def chat_handler(msg: types.Message):
             full_message = "\n".join(messages)
             user_message_buffer[user_id] = []  # Clear buffer
 
-            # Simulate Ava being "online"
-await bot.send_chat_action(msg.chat.id, action="typing")
-await asyncio.sleep(1)  # slight pause before real typing
-await bot.send_chat_action(msg.chat.id, action="typing")
+            # Simulate Ava being "online" (fake presence)
+            await bot.send_chat_action(msg.chat.id, action="typing")
+            await asyncio.sleep(1)  # Short delay to simulate Ava "appearing online"
+            await bot.send_chat_action(msg.chat.id, action="typing")
 
             # 🧠 AI Reply
             response = openai.ChatCompletion.create(
