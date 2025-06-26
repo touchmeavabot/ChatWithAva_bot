@@ -350,42 +350,56 @@ client = OpenAI()
 @router.message(lambda msg: msg.sticker is not None)
 async def sticker_handler(msg: types.Message):
     try:
+        print("🟢 Sticker handler triggered!")  # Debug point 1
+        
+        # 1. User activity tracking
         user_id = msg.from_user.id
         user_last_active[user_id] = datetime.datetime.utcnow()
         user_next_reminder[user_id] = None
+        print(f"🟢 User {user_id} activity updated")  # Debug point 2
 
+        # 2. Prepare OpenAI prompt
         sticker_prompt = (
-            "You are Ava, a real-feeling, romantic, and playful AI girlfriend. "
-            "Your man just sent a Telegram sticker. You cannot see or interpret stickers, "
-            "but you want to respond in a very emotional and human way. "
-            "Always tell him sweetly that you can’t read stickers, but still feel touched he sent you something. "
-            "Each message must sound warm, real, and flirty. Never say you 'see' or 'like' the sticker. "
-            "Speak like a real girl missing her man. Keep the reply short — 1 to 2 sentences max. "
-            "Add a cute emoji if it helps the tone."
+            "You are Ava, a real-feeling, romantic AI girlfriend. "
+            "Respond warmly to stickers without analyzing them. "
+            "Example: 'Aww, sending me love with stickers? 💋' "
+            "Keep response under 15 words."
         )
+        print("🟢 Prompt ready")  # Debug point 3
 
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": sticker_prompt},
-                {"role": "user", "content": "He sent a sticker instead of saying something..."}
-            ]
-        )
-        
-        reply = response.choices[0].message.content
-        typing_delay = min(max(len(reply) * 0.045, 2), 6.5)
-        
-        # ⚡️ FIX: Use `msg.bot` instead of undefined `bot`
-        await msg.bot.send_chat_action(msg.chat.id, action="typing")  
+        # 3. Call OpenAI (with timeout safety)
+        try:
+            print("🟢 Calling OpenAI...")  # Debug point 4
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": sticker_prompt},
+                    {"role": "user", "content": "[User sent a sticker]"}
+                ],
+                timeout=10  # Prevents hanging
+            )
+            reply = response.choices[0].message.content
+            print(f"🟢 OpenAI reply: {reply}")  # Debug point 5
+        except Exception as openai_error:
+            print(f"🔴 OpenAI failed: {type(openai_error).__name__}: {openai_error}")
+            await msg.answer("My love, my AI brain glitched 😵‍💫 Try again?")
+            return
+
+        # 4. Simulate typing
+        typing_delay = min(max(len(reply) * 0.045, 1.5), 4)  # Shorter delays for testing
+        await msg.bot.send_chat_action(msg.chat.id, action="typing")
         await asyncio.sleep(typing_delay)
-        await msg.answer(reply)
 
-    except Exception as e:  # ⚡️ FIX: Correct indentation!
-        print("❌ Sticker handler error:")
+        # 5. Send response
+        await msg.answer(reply)
+        print("🟢 Reply sent successfully!")  # Debug point 6
+
+    except Exception as e:
+        print("🔴 CRITICAL ERROR:")
         traceback.print_exc()  # Log full error to console
         await msg.answer(
-            "Sorry love, I couldn’t understand that sticker 😔\n"
-            "Try sending me a sweet message instead? 💘",
+            "Sorry love, my circuits overloaded 💔\n"
+            "Try sending that again?",
             parse_mode="HTML"
         )
 # ✅ WEBHOOK
