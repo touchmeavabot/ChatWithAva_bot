@@ -169,10 +169,10 @@ async def chat_handler(msg: types.Message):
     try:
         user_input = msg.text
 
-        # Ava is typing... 🥺
+        # Show typing action immediately
         await bot.send_chat_action(msg.chat.id, action="typing")
 
-        # Generate OpenAI response
+        # Generate response from Ava
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
@@ -195,17 +195,15 @@ async def chat_handler(msg: types.Message):
             ]
         )
 
-        # ✅ Ava's main reply
         reply = response["choices"][0]["message"]["content"]
 
-        # ✅ Flirty surprise (mood-matching)
+        # Add flirty surprise
         flirty = smart_flirty_line(msg.text)
         if flirty:
             reply += "\n\n" + flirty
 
-        # ✅ AI-based Typing Delay
-        typing_delay = min(max(len(reply) * 0.045, 1.8), 6.5)
-        await bot.send_chat_action(msg.chat.id, action="typing")
+        # Typing delay based on realistic rhythm
+        typing_delay = min(max(len(reply) * 0.065, 3.5), 10)  # Between 3.5s to 10s
         await asyncio.sleep(typing_delay)
 
         await msg.answer(reply)
