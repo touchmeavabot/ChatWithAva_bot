@@ -103,7 +103,7 @@ async def reminder_loop():
                         ]
                     )
 
-                    reply = response["choices"][0]["message"]["content"]
+                    reply = response.choices[0].message.content
                     await bot.send_message(user_id, reply)
 
                     # Adjust delay based on how long it's been
@@ -222,7 +222,7 @@ async def successful_payment_handler(msg: types.Message):
             ]
         )
 
-        reply = response["choices"][0]["message"]["content"]
+        reply = response.choices[0].message.content
 
         # Typing delay based on message length
         typing_time = min(max(len(reply) * 0.045, 2), 6.5)
