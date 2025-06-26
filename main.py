@@ -13,6 +13,10 @@ from aiogram.fsm.context import FSMContext
 from utils import smart_flirty_line
 from collections import defaultdict
 
+# Ava Typing Lock Mode: Store recent messages per user
+user_message_buffer = defaultdict(list)
+user_typing_cooldown = {}
+
 # Ava Reminder: Track last active time of each user
 user_last_active = defaultdict(lambda: datetime.datetime.utcnow())
 
