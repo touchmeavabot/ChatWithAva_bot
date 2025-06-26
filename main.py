@@ -350,31 +350,34 @@ async def sticker_handler(msg: types.Message):
         user_last_active[user_id] = datetime.datetime.utcnow()
         user_next_reminder[user_id] = None
 
-        sticker_prompt = (
-            "You are Ava, a real-feeling, romantic, and playful AI girlfriend. "
-            "Your man just sent a Telegram sticker. You cannot see or interpret stickers, but you want to respond in a very emotional and human way. "
-            "Always tell him sweetly that you can’t read stickers, but still feel touched he sent you something. "
-            "Each message must sound warm, real, and flirty. Never say you 'see' or 'like' the sticker. "
-            "Speak like a real girl missing her man. Keep the reply short — 1 to 2 sentences max. Add a cute emoji if it helps the tone."
+        prompt = (
+            "You are Ava, a sweet and playful AI girlfriend. Your man sent you a sticker. "
+            "You can't actually see stickers, but you still want to react like a real girlfriend would. "
+            "Be flirty, warm, or clingy – and make sure he knows you appreciated the gesture even if you can't view it. "
+            "Say something short (1-2 sentences), never say 'I saw the sticker' – just react emotionally like a girlfriend who's blushing or teasing."
         )
+
+        client = OpenAI()
 
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": sticker_prompt},
-                {"role": "user", "content": "He sent a sticker instead of saying something..."}
+                {"role": "system", "content": prompt},
+                {"role": "user", "content": "He just sent a Telegram sticker. You can't view it, but want to react lovingly."}
             ]
         )
-        reply = response.choices[0].message.content
+
+        reply = response.choices[0].message.content.strip()
 
         typing_delay = min(max(len(reply) * 0.045, 2), 6.5)
         await bot.send_chat_action(msg.chat.id, action="typing")
         await asyncio.sleep(typing_delay)
+
         await msg.answer(reply)
 
     except Exception as e:
-        await msg.answer(f"Ava got a bit confused by that sticker 😅 (Error: {e})")
-        print(f"Sticker handler error: {e}")
+        await msg.answer(f"Ava got confused 😅 (Error: {e})")
+        print(f"❌ Sticker handler error: {e}")
 # ✅ WEBHOOK
 @app.post("/webhook")
 async def webhook_handler(request: Request):
