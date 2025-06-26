@@ -257,9 +257,9 @@ async def chat_handler(msg: types.Message):
             full_message = "\n".join(messages)
             user_message_buffer[user_id] = []  # Clear buffer
 
-            # ✅ Ava shows online before typing
-            await bot.send_chat_action(msg.chat.id, action="upload_photo")
-await asyncio.sleep(1.5)
+            # Simulate Ava being "online"
+await bot.send_chat_action(msg.chat.id, action="typing")
+await asyncio.sleep(1)  # slight pause before real typing
 await bot.send_chat_action(msg.chat.id, action="typing")
 
             # 🧠 AI Reply
