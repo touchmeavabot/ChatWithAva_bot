@@ -203,14 +203,14 @@ async def chat_handler(msg: types.Message):
         if flirty:
             reply += "\n\n" + flirty
 
-        # ✅ Typing delay based on reply length
-typing_delay = min(max(len(reply) * 0.045, 1.8), 6.5)  # Between 1.8s and 6.5s
-await bot.send_chat_action(msg.chat.id, action="typing")
-await asyncio.sleep(typing_delay)
-await msg.answer(reply)
+        # Ava typing simulation
+    typing_delay = min(max(len(reply) * 0.045, 1.8), 6.5)
+    await bot.send_chat_action(msg.chat.id, action="typing")
+    await asyncio.sleep(typing_delay)
 
-    except Exception as e:
-        await msg.answer(f"Ava got a little shy 😳 Error: {e}")
+    await msg.answer(reply)
+except Exception as e:
+    await msg.answer(f"Ava got a little shy 😳 Error: {e}")
 
 # ✅ WEBHOOK
 @app.post("/webhook")
