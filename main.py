@@ -251,18 +251,17 @@ async def chat_handler(msg: types.Message):
 
         # ✅ Start new cooldown
         async def typing_cooldown():
-            await asyncio.sleep(2)  # Reduced delay for faster reply
+            await asyncio.sleep(2)  # Shorter cooldown so reply doesn't delay
 
             messages = user_message_buffer[user_id]
             full_message = "\n".join(messages)
             user_message_buffer[user_id] = []  # Clear buffer
 
-            # Ava appears as typing (simulate being online)
-            await bot.send_chat_action(msg.chat.id, action=types.ChatAction.TYPING)
-            await asyncio.sleep(1)
-            await bot.send_chat_action(msg.chat.id, action=types.ChatAction.TYPING)
+            # ✅ Simulate Ava coming online first (before typing)
+            await bot.send_chat_action(msg.chat.id, action=ChatAction.TYPING)
+            await asyncio.sleep(1.5)  # Short pause
 
-            # 🧠 Generate AI reply
+            # ✅ AI Reply
             response = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
                 messages=[
@@ -287,19 +286,19 @@ async def chat_handler(msg: types.Message):
 
             reply = response["choices"][0]["message"]["content"]
 
-            # 🔥 Flirty trigger
+            # 🔥 Add flirty if triggered
             flirty = smart_flirty_line(full_message)
             if flirty:
                 reply += "\n\n" + flirty
 
-            # ⏳ Typing delay based on message length
-            typing_delay = min(max(len(reply) * 0.065, 2), 6)
+            # ⏳ Typing delay
+            typing_delay = min(max(len(reply) * 0.065, 3.5), 10)
             await asyncio.sleep(typing_delay)
 
-            # 💬 Send reply
+            # ✅ Send reply
             await bot.send_message(chat_id=msg.chat.id, text=reply)
 
-        # ✅ Launch cooldown task
+        # ✅ Store and run task
         task = asyncio.create_task(typing_cooldown())
         user_typing_cooldown[user_id] = task
 
