@@ -1,5 +1,7 @@
 import os
 import openai
+# ✅ Set OpenAI API key
+openai.api_key = os.getenv("OPENAI_API_KEY")
 import datetime
 import asyncio
 from fastapi import FastAPI, Request
@@ -340,6 +342,7 @@ from openai import OpenAI
 client = OpenAI()
 # ✅ STICKER HANDLER
 
+import openai
 import traceback
 
 @router.message(lambda msg: msg.sticker is not None)
@@ -357,16 +360,15 @@ async def sticker_handler(msg: types.Message):
             "Speak like a real girl missing her man. Keep the reply short — 1 to 2 sentences max. Add a cute emoji if it helps the tone."
         )
 
-        response = client.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": sticker_prompt},
                 {"role": "user", "content": "He sent a sticker instead of saying something..."}
             ]
         )
-        reply = response.choices[0].message.content
+        reply = response["choices"][0]["message"]["content"]
 
-        # Ava typing simulation
         typing_delay = min(max(len(reply) * 0.045, 2), 6.5)
         await bot.send_chat_action(msg.chat.id, action="typing")
         await asyncio.sleep(typing_delay)
