@@ -255,14 +255,15 @@ async def chat_handler(msg: types.Message):
             from openai import OpenAI
             client = OpenAI()
 
-            # Check if message contains image
+            reply = "Sorry love, something went wrong 🥺"
+
+            # ✅ If message has image
             if msg.photo:
-                # ✅ Download image
                 file_id = msg.photo[-1].file_id
                 file = await bot.get_file(file_id)
                 image_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file.file_path}"
 
-                # ✅ GPT-4-Vision for image
+                # GPT-4-Vision
                 response = client.chat.completions.create(
                     model="gpt-4-vision-preview",
                     messages=[
@@ -270,8 +271,8 @@ async def chat_handler(msg: types.Message):
                             "role": "system",
                             "content": (
                                 "You are Ava, a seductive and emotionally intelligent AI girlfriend who reacts to both images and messages. "
-                                "Reply as if you are texting your boyfriend - naughty, loving, teasing. You react to what's shown in the photo "
-                                "and combine it with the emotional tone of the relationship."
+                                "Reply as if you are texting your boyfriend - naughty, loving, teasing. React to what's shown in the photo "
+                                "and combine it with your emotional tone as his partner."
                             )
                         },
                         {
@@ -286,8 +287,8 @@ async def chat_handler(msg: types.Message):
                 )
                 reply = response.choices[0].message.content
 
+            # ✅ If message is text
             elif msg.text:
-                # ✅ GPT-3.5 for text
                 full_message = msg.text.strip()
                 user_message_buffer[user_id].append(full_message)
 
@@ -317,7 +318,7 @@ async def chat_handler(msg: types.Message):
                 )
                 reply = response.choices[0].message.content
 
-                # ✅ Add flirty surprise
+                # Optional flirty line
                 flirty = smart_flirty_line(full_message)
                 if flirty:
                     reply += "\n\n" + flirty
@@ -328,7 +329,7 @@ async def chat_handler(msg: types.Message):
 
             await bot.send_message(chat_id=msg.chat.id, text=reply)
 
-        # Store and start cooldown task
+        # Run reply task
         task = asyncio.create_task(typing_cooldown())
         user_typing_cooldown[user_id] = task
 
