@@ -263,11 +263,12 @@ async def chat_handler(msg: types.Message):
             await asyncio.sleep(1.5)  # Short pause
 
             # ✅ AI Reply
-            from openai import AsyncOpenAI
+            from openai import OpenAI
 
-client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+client = OpenAI()  # Will use OPENAI_API_KEY from environment or variable
 
-response = await client.chat.completions.create(
+# ✅ AI Reply (Updated for openai>=1.3.5)
+response = client.chat.completions.create(
     model="gpt-3.5-turbo",
     messages=[
         {
