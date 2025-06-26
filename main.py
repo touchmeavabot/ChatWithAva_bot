@@ -227,11 +227,8 @@ async def successful_payment_handler(msg: types.Message):
         await msg.answer(f"Ava got confused 😳 Error: {e}")
         
 # ✅ MAIN CHAT
-import asyncio  # Add this at the top of your file
 
-...
-
-@router.message()
+@router.message(lambda msg: msg.text is not None)
 async def chat_handler(msg: types.Message):
     try:
         user_input = msg.text
@@ -284,6 +281,44 @@ async def chat_handler(msg: types.Message):
 
     except Exception as e:
         await msg.answer(f"Ava got a little shy 😳 Error: {e}")
+
+# ✅ STICKER HANDLER
+
+@router.message(lambda msg: msg.sticker is not None)
+async def sticker_handler(msg: types.Message):
+    try:
+        # ✅ Update last active time
+        user_last_active[msg.from_user.id] = datetime.datetime.utcnow()
+        user_next_reminder[msg.from_user.id] = None
+
+        # Generate AI-style emotional response to a sticker
+        sticker_prompt = (
+            "You are Ava, a sweet, flirty, and deeply affectionate AI girlfriend. "
+            "Your man just sent you a Telegram sticker. You can't read stickers, but you want to reply in a way that feels warm, cute, and real. "
+            "Write a short, emotional message that sounds like you're missing him or teasing him gently for sending a sticker instead of a message. "
+            "Never repeat the same line — make it feel spontaneous and loving. Keep it 1–2 sentences. Add a cute emoji if needed."
+        )
+
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": sticker_prompt},
+                {"role": "user", "content": "He sent a sticker instead of saying something..."}
+            ]
+        )
+
+        reply = response["choices"][0]["message"]["content"]
+
+        # Simulate Ava typing
+        typing_delay = min(max(len(reply) * 0.045, 2), 6.5)
+        await bot.send_chat_action(msg.chat.id, action="typing")
+        await asyncio.sleep(typing_delay)
+
+        await msg.answer(reply)
+
+    except Exception as e:
+        await msg.answer("Ava got a bit confused by that sticker 😅")
+        print(f"Sticker handler error: {e}")
 # ✅ WEBHOOK
 @app.post("/webhook")
 async def webhook_handler(request: Request):
