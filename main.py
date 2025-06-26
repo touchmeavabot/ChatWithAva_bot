@@ -241,11 +241,9 @@ async def chat_handler(msg: types.Message):
         user_last_active[user_id] = datetime.datetime.utcnow()
         user_next_reminder[user_id] = None  # Reset Ava's reminder cycle
 
-        # ✅ Cancel previous cooldown if active
         if user_id in user_typing_cooldown:
             user_typing_cooldown[user_id].cancel()
 
-        # ✅ Start cooldown-based reply
         async def typing_cooldown():
             await asyncio.sleep(2)
             await bot.send_chat_action(msg.chat.id, action=ChatAction.TYPING)
@@ -256,15 +254,17 @@ async def chat_handler(msg: types.Message):
             client = OpenAI()
             reply = "Sorry love, something went wrong 🥺"
 
-            # ✅ If message has photo
             if msg.photo:
                 try:
                     file_id = msg.photo[-1].file_id
                     file = await bot.get_file(file_id)
                     file_path = file.file_path
                     image_data = await bot.download_file(file_path)
-                    image_bytes = image_data.read()  # ❗ FIXED: removed `await`
+                    image_bytes = await image_data.read()
                     encoded_image = base64.b64encode(image_bytes).decode("utf-8")
+
+                    # Prepare text with caption (if any)
+                    caption = msg.caption or "React to this image like you're my girlfriend."
 
                     response = client.chat.completions.create(
                         model="gpt-4o",
@@ -280,7 +280,7 @@ async def chat_handler(msg: types.Message):
                             {
                                 "role": "user",
                                 "content": [
-                                    {"type": "text", "text": "React to this image like you're my girlfriend."},
+                                    {"type": "text", "text": caption},
                                     {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{encoded_image}"}},
                                 ]
                             }
@@ -291,12 +291,10 @@ async def chat_handler(msg: types.Message):
                 except Exception as e:
                     reply = f"Ava couldn’t react to the photo 😔 (Error: {e})"
 
-            # ✅ If message is text
             elif msg.text:
                 try:
                     full_message = msg.text.strip()
                     user_message_buffer[user_id].append(full_message)
-
                     messages = "\n".join(user_message_buffer[user_id])
                     user_message_buffer[user_id] = []
 
@@ -323,11 +321,9 @@ async def chat_handler(msg: types.Message):
                     )
                     reply = response.choices[0].message.content
 
-                    # Add flirty if needed
                     flirty = smart_flirty_line(full_message)
                     if flirty:
                         reply += "\n\n" + flirty
-
                 except Exception as e:
                     reply = f"Ava couldn’t reply to your message 😔 (Error: {e})"
 
