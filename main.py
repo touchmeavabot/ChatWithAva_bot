@@ -370,7 +370,7 @@ async def sticker_handler(msg: types.Message):
             ]
         )
         
-        reply = response.choices[0].message['content']
+        reply = response.choices[0].message.content
         typing_delay = min(max(len(reply) * 0.045, 2), 6.5)
         await bot.send_chat_action(msg.chat.id, action="typing")
         await asyncio.sleep(typing_delay)
