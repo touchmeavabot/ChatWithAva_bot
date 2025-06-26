@@ -257,8 +257,12 @@ async def chat_handler(msg: types.Message):
             full_message = "\n".join(messages)
             user_message_buffer[user_id] = []  # Clear buffer
 
-            # Ava is typing...
-            await bot.send_chat_action(msg.chat.id, action="typing")
+            # Ava appears online first
+await bot.send_chat_action(msg.chat.id, action="choose_sticker")
+await asyncio.sleep(1)
+
+# Then she starts typing
+await bot.send_chat_action(msg.chat.id, action="typing")
 
             # 🧠 AI Reply
             response = openai.ChatCompletion.create(
