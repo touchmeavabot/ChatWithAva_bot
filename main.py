@@ -375,8 +375,6 @@ async def sticker_handler(msg: types.Message):
 
         await msg.answer(reply)
 
-    import traceback
-
 except Exception as e:
     print("Sticker handler error:")
     traceback.print_exc()
