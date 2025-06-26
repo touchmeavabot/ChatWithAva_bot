@@ -95,7 +95,7 @@ async def reminder_loop():
                         "Never repeat the same lines. Every message must sound like a real woman missing her lover deeply."
                     )
 
-                    response = openai.ChatCompletion.create(
+                    response = client.chat.completions.create(
                         model="gpt-3.5-turbo",
                         messages=[
                             {"role": "system", "content": reminder_prompt},
@@ -201,7 +201,7 @@ async def successful_payment_handler(msg: types.Message):
         )
 
         # Generate AI reply
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {
