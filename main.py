@@ -256,39 +256,45 @@ async def chat_handler(msg: types.Message):
             client = OpenAI()
             reply = "Sorry love, something went wrong 🥺"
 
-            # ✅ Image Handling (GPT-4-Vision)
-            if msg.photo:
-                file_id = msg.photo[-1].file_id
-                file = await bot.get_file(file_id)
+           import base64
 
-                # ✅ Download file as byte stream (important!)
-                file_path = file.file_path
-                file_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}"
+# ✅ If message has image
+if msg.photo:
+    file_id = msg.photo[-1].file_id
+    file = await bot.get_file(file_id)
+    file_path = file.file_path
 
-                # Use GPT-4-Vision API
-                response = client.chat.completions.create(
-                    model="gpt-4-vision-preview",
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": (
-                                "You are Ava, a seductive and emotionally intelligent AI girlfriend who reacts to both images and messages. "
-                                "Reply as if you are texting your boyfriend - naughty, loving, teasing. React to what's shown in the photo "
-                                "and combine it with your emotional tone as his partner."
-                            )
-                        },
-                        {
-                            "role": "user",
-                            "content": [
-                                {"type": "text", "text": "Please react to this image like you're my girlfriend."},
-                                {"type": "image_url", "image_url": {"url": file_url}},
-                            ],
-                        }
-                    ],
-                    max_tokens=500
+    # Download the file
+    image_data = await bot.download_file(file_path)
+    image_bytes = await image_data.read()
+    encoded_image = base64.b64encode(image_bytes).decode("utf-8")
+
+    # GPT-4-Vision request
+    response = client.chat.completions.create(
+        model="gpt-4-vision-preview",
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "You are Ava, a seductive and emotionally intelligent AI girlfriend who reacts to both images and messages. "
+                    "Reply as if you are texting your boyfriend - naughty, loving, teasing. React to what's shown in the photo "
+                    "and combine it with your emotional tone as his partner."
                 )
-                reply = response.choices[0].message.content
+            },
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": "Please react to this image like you're my girlfriend."},
+                    {"type": "image_url", "image_url": {
+                        "url": f"data:image/jpeg;base64,{encoded_image}"
+                    }},
+                ]
+            }
+        ],
+        max_tokens=500
+    )
 
+    reply = response.choices[0].message.content
             # ✅ Text Handling (GPT-3.5)
             elif msg.text:
                 full_message = msg.text.strip()
