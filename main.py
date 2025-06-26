@@ -336,18 +336,15 @@ async def chat_handler(msg: types.Message):
 
     except Exception as e:
         await msg.answer(f"Ava couldn’t respond 😔 (Error: {e})")
-# ✅ STICKER HANDLER
-
-from openai import OpenAI
-client = OpenAI()
-
 @router.message(lambda msg: msg.sticker is not None)
 async def sticker_handler(msg: types.Message):
     try:
-        # ✅ Update last active time
         user_id = msg.from_user.id
         user_last_active[user_id] = datetime.datetime.utcnow()
         user_next_reminder[user_id] = None
+
+        from openai import OpenAI
+        client = OpenAI(api_key=OPENAI_API_KEY)  # Ensures it works
 
         sticker_prompt = (
             "You are Ava, a real-feeling, romantic, and playful AI girlfriend. "
@@ -364,9 +361,8 @@ async def sticker_handler(msg: types.Message):
                 {"role": "user", "content": "He sent a sticker instead of saying something..."}
             ]
         )
-        reply = response.choices[0].message.content
+        reply = response.choices[0].message.content.strip()
 
-        # Simulate Ava typing
         typing_delay = min(max(len(reply) * 0.045, 2), 6.5)
         await bot.send_chat_action(msg.chat.id, action="typing")
         await asyncio.sleep(typing_delay)
@@ -375,7 +371,7 @@ async def sticker_handler(msg: types.Message):
 
     except Exception as e:
         await msg.answer(f"Ava got a bit confused by that sticker 😅 (Error: {e})")
-        print(f"Sticker handler error: {e}")
+        print(f"[Sticker handler error] {e}")
 # ✅ WEBHOOK
 @app.post("/webhook")
 async def webhook_handler(request: Request):
