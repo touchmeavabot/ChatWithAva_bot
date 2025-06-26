@@ -171,7 +171,7 @@ async def successful_payment_handler(msg: types.Message):
         await msg.answer(reply)
 
     except Exception as e:
-        await msg.answer(f"Ava got confused 😳 Error: {e}"))
+        await msg.answer(f"Ava got confused 😳 Error: {e}")
         
 # ✅ MAIN CHAT
 import asyncio  # Add this at the top of your file
