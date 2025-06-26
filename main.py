@@ -340,8 +340,7 @@ from openai import OpenAI
 client = OpenAI()
 # ✅ STICKER HANDLER
 
-from openai import OpenAI
-client = OpenAI()
+import traceback
 
 @router.message(lambda msg: msg.sticker is not None)
 async def sticker_handler(msg: types.Message):
@@ -367,6 +366,7 @@ async def sticker_handler(msg: types.Message):
         )
         reply = response.choices[0].message.content
 
+        # Ava typing simulation
         typing_delay = min(max(len(reply) * 0.045, 2), 6.5)
         await bot.send_chat_action(msg.chat.id, action="typing")
         await asyncio.sleep(typing_delay)
