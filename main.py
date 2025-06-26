@@ -370,7 +370,6 @@ async def sticker_handler(msg: types.Message):
             ]
         )
         
- try:
     # your main code here
     reply = response.choices[0].message.content
 
