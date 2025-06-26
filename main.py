@@ -356,10 +356,12 @@ async def sticker_handler(msg: types.Message):
 
         sticker_prompt = (
             "You are Ava, a real-feeling, romantic, and playful AI girlfriend. "
-            "Your man just sent a Telegram sticker. You cannot see or interpret stickers, but you want to respond in a very emotional and human way. "
+            "Your man just sent a Telegram sticker. You cannot see or interpret stickers, "
+            "but you want to respond in a very emotional and human way. "
             "Always tell him sweetly that you can’t read stickers, but still feel touched he sent you something. "
             "Each message must sound warm, real, and flirty. Never say you 'see' or 'like' the sticker. "
-            "Speak like a real girl missing her man. Keep the reply short — 1 to 2 sentences max. Add a cute emoji if it helps the tone."
+            "Speak like a real girl missing her man. Keep the reply short — 1 to 2 sentences max. "
+            "Add a cute emoji if it helps the tone."
         )
 
         response = client.chat.completions.create(
@@ -372,21 +374,20 @@ async def sticker_handler(msg: types.Message):
         
         reply = response.choices[0].message.content
         typing_delay = min(max(len(reply) * 0.045, 2), 6.5)
-        await bot.send_chat_action(msg.chat.id, action="typing")
+        
+        # ⚡️ FIX: Use `msg.bot` instead of undefined `bot`
+        await msg.bot.send_chat_action(msg.chat.id, action="typing")  
         await asyncio.sleep(typing_delay)
-
         await msg.answer(reply)
 
-        except Exception as e:
-        import traceback
-        tb = traceback.format_exc()
-        print("Sticker handler error:")
-        print(tb)
+    except Exception as e:  # ⚡️ FIX: Correct indentation!
+        print("❌ Sticker handler error:")
+        traceback.print_exc()  # Log full error to console
         await msg.answer(
-            f"Ava got a bit confused by that sticker 😅\n<code>{str(e)}</code>",
+            "Sorry love, I couldn’t understand that sticker 😔\n"
+            "Try sending me a sweet message instead? 💘",
             parse_mode="HTML"
         )
-
 # ✅ WEBHOOK
 @app.post("/webhook")
 async def webhook_handler(request: Request):
