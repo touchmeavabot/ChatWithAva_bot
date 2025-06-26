@@ -340,6 +340,9 @@ from openai import OpenAI
 client = OpenAI()
 # ✅ STICKER HANDLER
 
+from openai import OpenAI
+client = OpenAI()
+
 @router.message(lambda msg: msg.sticker is not None)
 async def sticker_handler(msg: types.Message):
     try:
@@ -359,20 +362,21 @@ async def sticker_handler(msg: types.Message):
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": sticker_prompt},
-                {"role": "user", "content": "He sent a sticker instead of saying something..."}
+                {"role": "user", "content": "He just sent me a Telegram sticker. I can't see it but want to respond sweetly."}
             ]
         )
+
         reply = response.choices[0].message.content
 
         typing_delay = min(max(len(reply) * 0.045, 2), 6.5)
-        await bot.send_chat_action(msg.chat.id, action=ChatAction.TYPING)
+        await bot.send_chat_action(msg.chat.id, action="typing")
         await asyncio.sleep(typing_delay)
 
         await msg.answer(reply)
 
     except Exception as e:
         await msg.answer(f"Ava got a bit confused by that sticker 😅 (Error: {e})")
-        print(f"Sticker handler error: {e}")
+        print(f"[❌ Sticker Error] {e}")
 # ✅ WEBHOOK
 @app.post("/webhook")
 async def webhook_handler(request: Request):
