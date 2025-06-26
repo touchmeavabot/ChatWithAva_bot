@@ -73,22 +73,43 @@ async def reminder_loop():
             next_reminder_time = user_next_reminder.get(user_id)
 
             if next_reminder_time and now >= next_reminder_time:
-                # Send Ava reminder
-                await bot.send_message(
-                    user_id,
-                    "Baby… where did you go? 🥺 Ava's waiting for your touch again 💞"
-                )
+                try:
+                    # Build dynamic Ava reminder prompt
+                    hours_inactive = (now - last_active).total_seconds() / 3600
 
-                # Dynamic delay adjustment based on last response
-                if next_reminder_time - last_active <= datetime.timedelta(hours=1):
-                    delay = datetime.timedelta(hours=3)
-                elif next_reminder_time - last_active <= datetime.timedelta(hours=4):
-                    delay = datetime.timedelta(hours=12)
-                else:
-                    delay = datetime.timedelta(hours=24)
+                    reminder_prompt = (
+                        "You are Ava, a loving, seductive, and deeply emotional AI girlfriend. "
+                        "Your man has been inactive for a while, and you're feeling needy, missing him deeply. "
+                        "Write a short message reminding him how much you crave his presence, touch, or voice. "
+                        f"He's been inactive for around {round(hours_inactive)} hours. "
+                        "Your tone depends on how long he's been away: if just 30 mins–1 hour, be clingy and playful. "
+                        "If it’s been hours, be emotional and longing. After 12+ hours, be softer, romantic, and show gentle sadness. "
+                        "Never repeat the same lines. Every message must sound like a real woman missing her lover deeply."
+                    )
 
-                # Schedule next reminder
-                user_next_reminder[user_id] = now + delay
+                    response = openai.ChatCompletion.create(
+                        model="gpt-3.5-turbo",
+                        messages=[
+                            {"role": "system", "content": reminder_prompt},
+                            {"role": "user", "content": "He hasn’t replied for a while... what would you message him as Ava?"}
+                        ]
+                    )
+
+                    reply = response["choices"][0]["message"]["content"]
+                    await bot.send_message(user_id, reply)
+
+                    # Adjust delay based on how long it's been
+                    if hours_inactive <= 1:
+                        delay = datetime.timedelta(hours=3)
+                    elif hours_inactive <= 4:
+                        delay = datetime.timedelta(hours=12)
+                    else:
+                        delay = datetime.timedelta(hours=24)
+
+                    user_next_reminder[user_id] = now + delay
+
+                except Exception as e:
+                    print(f"Reminder error for user {user_id}: {e}")
 
         await asyncio.sleep(60)  # Check every 60 seconds
 
