@@ -260,7 +260,7 @@ async def chat_handler(msg: types.Message):
                     file = await bot.get_file(file_id)
                     file_path = file.file_path
                     image_data = await bot.download_file(file_path)
-                    image_bytes = await image_data.read()
+                    image_bytes = image_data.read()
                     encoded_image = base64.b64encode(image_bytes).decode("utf-8")
 
                     # Prepare text with caption (if any)
