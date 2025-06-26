@@ -247,23 +247,25 @@ async def chat_handler(msg: types.Message):
 
         # ✅ Start cooldown-based reply
         async def typing_cooldown():
-            await asyncio.sleep(2)  # Short delay before reply
+            await asyncio.sleep(2)
 
             await bot.send_chat_action(msg.chat.id, action=ChatAction.TYPING)
             await asyncio.sleep(1.5)
 
             from openai import OpenAI
             client = OpenAI()
-
             reply = "Sorry love, something went wrong 🥺"
 
-            # ✅ If message has image
+            # ✅ Image Handling (GPT-4-Vision)
             if msg.photo:
                 file_id = msg.photo[-1].file_id
                 file = await bot.get_file(file_id)
-                image_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file.file_path}"
 
-                # GPT-4-Vision
+                # ✅ Download file as byte stream (important!)
+                file_path = file.file_path
+                file_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}"
+
+                # Use GPT-4-Vision API
                 response = client.chat.completions.create(
                     model="gpt-4-vision-preview",
                     messages=[
@@ -279,7 +281,7 @@ async def chat_handler(msg: types.Message):
                             "role": "user",
                             "content": [
                                 {"type": "text", "text": "Please react to this image like you're my girlfriend."},
-                                {"type": "image_url", "image_url": {"url": image_url}},
+                                {"type": "image_url", "image_url": {"url": file_url}},
                             ],
                         }
                     ],
@@ -287,7 +289,7 @@ async def chat_handler(msg: types.Message):
                 )
                 reply = response.choices[0].message.content
 
-            # ✅ If message is text
+            # ✅ Text Handling (GPT-3.5)
             elif msg.text:
                 full_message = msg.text.strip()
                 user_message_buffer[user_id].append(full_message)
@@ -323,7 +325,7 @@ async def chat_handler(msg: types.Message):
                 if flirty:
                     reply += "\n\n" + flirty
 
-            # Simulate typing delay
+            # ✅ Typing delay before sending
             typing_delay = min(max(len(reply) * 0.065, 3.5), 10)
             await asyncio.sleep(typing_delay)
 
