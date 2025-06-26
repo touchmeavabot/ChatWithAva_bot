@@ -370,26 +370,28 @@ async def sticker_handler(msg: types.Message):
             ]
         )
         
-        reply = response.choices[0].message.content
-        typing_delay = min(max(len(reply) * 0.045, 2), 6.5)
-        await bot.send_chat_action(msg.chat.id, action="typing")
-        await asyncio.sleep(typing_delay)
+ try:
+    # your main code here
+    reply = response.choices[0].message.content
 
-        await msg.answer(reply)
+    typing_delay = min(max(len(reply) * 0.045, 2), 6.5)
+    await bot.send_chat_action(msg.chat.id, action="typing")
+    await asyncio.sleep(typing_delay)
+    await msg.answer(reply)
 
-            except Exception as e:
-        import traceback
-        tb = traceback.format_exc()
-        print("Sticker handler error:")
-        print(tb)
-        try:
-            await msg.answer(
-                f"Ava got a bit confused by that sticker 😅\n<code>{tb}</code>",
-                parse_mode="HTML"
-            )
-        except Exception as msg_error:
-            print("Failed to send error to user:")
-            print(msg_error)
+except Exception as e:
+    import traceback
+    tb = traceback.format_exc()
+    print("Sticker handler error:")
+    print(tb)
+    try:
+        await msg.answer(
+            f"Ava got a bit confused by that sticker 😅\n<code>{tb}</code>",
+            parse_mode="HTML"
+        )
+    except Exception as msg_error:
+        print("Failed to send error to user:")
+        print(msg_error)
 # ✅ WEBHOOK
 @app.post("/webhook")
 async def webhook_handler(request: Request):
