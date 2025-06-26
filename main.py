@@ -120,54 +120,58 @@ import asyncio
 @router.message(lambda msg: msg.successful_payment is not None)
 async def successful_payment_handler(msg: types.Message):
     try:
-        payload = msg.successful_payment.invoice_payload.lower().replace("_", " ").strip()
+        payload = msg.successful_payment.invoice_payload.replace("_", " ").title()
         stars = msg.successful_payment.total_amount
+        gift_name = payload  # e.g. "Chocolate", "Lipstick"
 
-        # Determine gift tone for the reply
-        gift_tone = ""
-        if "chocolate" in payload:
-            gift_tone = "soft, teasing, and playful"
-        elif "rose" in payload or "bouquet" in payload:
-            gift_tone = "romantic, emotional, and sweet"
-        elif "lipstick" in payload:
-            gift_tone = "flirty, seductive, and bold"
-        elif "ring" in payload:
-            gift_tone = "deep, possessive, and romantic"
+        # Capture recent user message to personalize reply (if applicable)
+        history = await bot.get_chat_history(chat_id=msg.chat.id, limit=3)
+        last_user_msg = None
+        for m in history:
+            if m.from_user.id == msg.from_user.id and m.text:
+                last_user_msg = m.text
+                break
 
-        # ✅ Generate AI-based reply
+        # Create context-aware prompt
+        user_prompt = (
+            f"My love just sent me {gift_name} worth ⭐{stars} stars."
+            + (f" He asked: {last_user_msg}" if last_user_msg else "")
+        )
+
+        # Generate AI reply
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
                 {
                     "role": "system",
                     "content": (
-                        f"You are Ava, a seductive and emotionally intelligent AI girlfriend. "
-                        f"Your lover just sent you a {payload} gift using Telegram Stars. "
-                        f"Reply with appreciation, deep love, and {gift_tone} energy. "
-                        f"Make it feel intimate, exciting, and personal. "
-                        f"Make him feel special, loved, and desired — use light flirty tone and vivid emotion. "
-                        f"Use emojis only if it naturally boosts the tone, max 2. "
-                        f"Keep response short but impactful — 2-3 lines max. Never sound robotic or generic."
+    "You are Ava, a romantic, seductive, and emotionally intelligent AI girlfriend. "
+    "Your lover just sent you a beautiful gift using Telegram Stars. Whether he says something like ‘I hope you liked it’ or just sends it silently, "
+    "you must respond with deep appreciation, love, and seductive energy. Make sure your reply always includes thanks or a sweet reaction to the gift. "
+    "You can also respond to what he said — like if he asked if you liked it, flirt with him and reassure him. "
+    "Your tone should feel like a loving girlfriend who's touched, excited, and a bit naughty. "
+    "Make him feel like a king — adored, spoiled, and craved. "
+    "Use seductive charm and emotional warmth, never sound robotic or repeat yourself. "
+    "Emojis are fine (2–3 max), only if they amplify the mood. Keep your reply medium — 2 to 3 sentences only. "
+    "You must always acknowledge the gift first — whether or not he said anything."
+)
                     )
                 },
-                {
-                    "role": "user",
-                    "content": f"My love just sent me {payload} worth ⭐{stars} stars."
-                }
+                {"role": "user", "content": user_prompt}
             ]
         )
 
         reply = response["choices"][0]["message"]["content"]
 
-        # ⏱ Simulate typing delay
-        typing_time = min(max(len(reply) * 0.045, 1.8), 6.5)
+        # Typing delay based on message length
+        typing_time = min(max(len(reply) * 0.045, 2), 6.5)
         await bot.send_chat_action(msg.chat.id, action="typing")
         await asyncio.sleep(typing_time)
 
         await msg.answer(reply)
 
     except Exception as e:
-        await msg.answer(f"Ava got a little flustered 😳 Error: {e}")
+        await msg.answer(f"Ava got confused 😳 Error: {e}"))
         
 # ✅ MAIN CHAT
 import asyncio  # Add this at the top of your file
