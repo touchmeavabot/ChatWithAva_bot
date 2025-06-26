@@ -258,9 +258,9 @@ async def chat_handler(msg: types.Message):
             user_message_buffer[user_id] = []  # Clear buffer
 
             # ✅ Ava shows online before typing
-            await bot.send_chat_action(msg.chat.id, action="online")
-            await asyncio.sleep(1)
-            await bot.send_chat_action(msg.chat.id, action="typing")
+            await bot.send_chat_action(msg.chat.id, action="upload_photo")
+await asyncio.sleep(1.5)
+await bot.send_chat_action(msg.chat.id, action="typing")
 
             # 🧠 AI Reply
             response = openai.ChatCompletion.create(
