@@ -12,6 +12,7 @@ from aiogram.types import Update, LabeledPrice, PreCheckoutQuery
 from aiogram.fsm.context import FSMContext
 from utils import smart_flirty_line
 from collections import defaultdict
+from aiogram.enums import ChatAction
 
 # Ava Typing Lock Mode: Store recent messages per user
 user_message_buffer = defaultdict(list)
