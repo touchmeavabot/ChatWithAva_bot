@@ -347,29 +347,44 @@ from openai import OpenAI
 
 client = OpenAI()
 
-@router.message(F.sticker)
+@router.message(lambda msg: msg.sticker is not None)
 async def sticker_handler(msg: types.Message):
     try:
-        # 1. Immediate debug response
-        await msg.answer("🛠️ Debug: Sticker received!")
-        
-        # 2. Test OpenAI (simplest possible call)
+        user_id = msg.from_user.id
+        user_last_active[user_id] = datetime.datetime.utcnow()
+        user_next_reminder[user_id] = None
+
+        sticker_prompt = (
+            "You are Ava, a real-feeling, romantic, and playful AI girlfriend. "
+            "Your man just sent a Telegram sticker. You cannot see or interpret stickers, but you want to respond in a very emotional and human way. "
+            "Always tell him sweetly that you can’t read stickers, but still feel touched he sent you something. "
+            "Each message must sound warm, real, and flirty. Never say you 'see' or 'like' the sticker. "
+            "Speak like a real girl missing her man. Keep the reply short — 1 to 2 sentences max. Add a cute emoji if it helps the tone."
+        )
+
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": "Say 'Hello world'"}]
+            messages=[
+                {"role": "system", "content": sticker_prompt},
+                {"role": "user", "content": "He sent a sticker instead of saying something..."}
+            ]
         )
+        
         reply = response.choices[0].message.content
-        
-        # 3. Send response
-        await msg.answer(f"OpenAI says: {reply}")
-        
-    except Exception as e:
-        error_msg = f"{type(e).__name__}: {str(e)}"
-        print(f"💥 FINAL ERROR: {error_msg}")
+        typing_delay = min(max(len(reply) * 0.045, 2), 6.5)
+        await bot.send_chat_action(msg.chat.id, action="typing")
+        await asyncio.sleep(typing_delay)
+
+        await msg.answer(reply)
+
+        except Exception as e:
+        import traceback
+        tb = traceback.format_exc()
+        print("Sticker handler error:")
+        print(tb)
         await msg.answer(
-            f"🔧 Technical Debug:\n"
-            f"```\n{error_msg}\n```",
-            parse_mode="MarkdownV2"
+            f"Ava got a bit confused by that sticker 😅\n<code>{str(e)}</code>",
+            parse_mode="HTML"
         )
 # ✅ WEBHOOK
 @app.post("/webhook")
