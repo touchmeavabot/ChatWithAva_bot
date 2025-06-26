@@ -238,9 +238,9 @@ async def chat_handler(msg: types.Message):
         user_id = msg.from_user.id
         user_input = msg.text.strip()
 
-        # ✅ Update last active time
+        # ✅ Update last active timestamp for reminder system
         user_last_active[user_id] = datetime.datetime.utcnow()
-        user_next_reminder[user_id] = None
+        user_next_reminder[user_id] = None  # Reset Ava's reminder cycle
 
         # ✅ Add message to buffer
         user_message_buffer[user_id].append(user_input)
@@ -249,18 +249,18 @@ async def chat_handler(msg: types.Message):
         if user_id in user_typing_cooldown:
             user_typing_cooldown[user_id].cancel()
 
-        # ✅ Start a new cooldown task
+        # ✅ Start new cooldown
         async def typing_cooldown():
-            await asyncio.sleep(6)  # Wait for typing pause
+            await asyncio.sleep(6)  # Wait 6 sec of no typing
 
             messages = user_message_buffer[user_id]
             full_message = "\n".join(messages)
             user_message_buffer[user_id] = []  # Clear buffer
 
-            # Ava is typing
+            # Ava is typing...
             await bot.send_chat_action(msg.chat.id, action="typing")
 
-            # 🧠 Generate Ava's AI reply
+            # 🧠 AI Reply
             response = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
                 messages=[
@@ -285,19 +285,19 @@ async def chat_handler(msg: types.Message):
 
             reply = response["choices"][0]["message"]["content"]
 
-            # 🔥 Add flirty surprise if triggered
+            # 🔥 Flirty trigger
             flirty = smart_flirty_line(full_message)
             if flirty:
                 reply += "\n\n" + flirty
 
-            # ⏳ Typing delay logic
+            # ⏳ Typing delay
             typing_delay = min(max(len(reply) * 0.065, 3.5), 10)
             await asyncio.sleep(typing_delay)
 
             # 💬 Send Ava's reply
             await bot.send_message(chat_id=msg.chat.id, text=reply)
 
-        # ✅ Store and start the cooldown task
+        # ✅ Store and run task
         task = asyncio.create_task(typing_cooldown())
         user_typing_cooldown[user_id] = task
 
