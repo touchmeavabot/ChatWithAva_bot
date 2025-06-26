@@ -251,7 +251,7 @@ async def chat_handler(msg: types.Message):
 
         # ✅ Start new cooldown
         async def typing_cooldown():
-            await asyncio.sleep(6)  # Wait 6 sec of no typing
+await asyncio.sleep(2)  # Instead of 6 seconds
 
             messages = user_message_buffer[user_id]
             full_message = "\n".join(messages)
