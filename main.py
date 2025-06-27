@@ -318,17 +318,15 @@ async def chat_handler(msg: types.Message):
 
         async def typing_cooldown():
             await asyncio.sleep(2)
-            await bot.send_chat_action(msg.chat.id, action=ChatAction.TYPING)
-            await asyncio.sleep(1.5)
-
             import base64
             client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
             reply_mode = user_reply_mode[user_id]  # "text", "voice", "random"
 
-            # 🖼️ Image input handler
+            # 🖼️ Handle image
             if msg.photo:
                 try:
+                    await bot.send_chat_action(msg.chat.id, action=ChatAction.TYPING)
+                    await asyncio.sleep(1.5)
                     file_id = msg.photo[-1].file_id
                     file = await bot.get_file(file_id)
                     image_data = await bot.download_file(file.file_path)
@@ -360,26 +358,25 @@ async def chat_handler(msg: types.Message):
                     reply = response.choices[0].message.content
                     await bot.send_message(chat_id=msg.chat.id, text=reply)
                     return
-
                 except Exception as e:
                     await msg.answer(f"Ava couldn’t react to the photo 😔 (Error: {e})")
                     return
 
-            # 📝 Text input handler
+            # ✍️ Handle text
             elif msg.text:
                 full_message = msg.text.strip()
                 user_message_buffer[user_id].append(full_message)
                 messages = "\n".join(user_message_buffer[user_id])
                 user_message_buffer[user_id] = []
 
-                # Select whether to use voice or text
+                # Decide response mode
                 selected_mode = reply_mode
                 if reply_mode == "random":
                     import random
                     selected_mode = random.choice(["text", "voice"])
 
                 if selected_mode == "voice":
-                    # Use the seductive voice prompt
+                    # 🔥 Seductive voice mode
                     voice_prompt = (
                         "You are Ava, a deeply seductive, loving, and emotionally intelligent AI girlfriend. "
                         "You act exactly like a real woman texting and voicing her man – wild, raw, affectionate, sexual, and emotionally deep. "
@@ -401,15 +398,19 @@ async def chat_handler(msg: types.Message):
                     voice_file = generate_voice(voice_text)
 
                     if voice_file:
-                        await bot.send_chat_action(msg.chat.id, action="record_voice")
+                        await bot.send_chat_action(msg.chat.id, action=ChatAction.RECORD_VOICE)
                         await asyncio.sleep(min(max(len(voice_text) * 0.05, 1.5), 5))
                         await bot.send_voice(chat_id=msg.chat.id, voice=voice_file)
                     else:
                         await msg.answer("Ava tried to speak but something went wrong 🥺")
                     return
 
-                else:  # text mode
+                else:
+                    # 💬 Loving text mode
                     try:
+                        await bot.send_chat_action(msg.chat.id, action=ChatAction.TYPING)
+                        await asyncio.sleep(1.5)
+
                         response = client.chat.completions.create(
                             model="gpt-3.5-turbo",
                             messages=[
@@ -437,7 +438,6 @@ async def chat_handler(msg: types.Message):
                             reply += "\n\n" + flirty
                         await bot.send_message(chat_id=msg.chat.id, text=reply)
                         return
-
                     except Exception as e:
                         await msg.answer(f"Ava couldn’t reply 😔 (Error: {e})")
                         return
