@@ -10,7 +10,7 @@ def generate_voice(text: str, filename: str = "ava_voice.mp3"):
     try:
         response = client.audio.speech.create(
             model="tts-1",
-            voice="nova",
+            voice="fable",
             input=text
         )
         os.makedirs("voices", exist_ok=True)
