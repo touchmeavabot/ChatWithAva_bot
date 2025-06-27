@@ -1,6 +1,5 @@
 import os
 import openai
-from openai import OpenAI
 from tts import generate_voice
 import traceback
 import datetime
@@ -15,7 +14,7 @@ from aiogram.types import Update, LabeledPrice, PreCheckoutQuery, InlineKeyboard
 from aiogram.fsm.context import FSMContext
 from collections import defaultdict
 from utils import smart_flirty_line
-from credits import CreditManager  # ✅ Step 8.1: Import CreditManager
+from credits import CreditManager
 
 # ✅ Ava Typing Lock Mode
 user_message_buffer = defaultdict(list)
@@ -26,7 +25,7 @@ user_last_active = defaultdict(lambda: datetime.datetime.utcnow())
 user_next_reminder = defaultdict(lambda: None)
 
 # ✅ Reply Mode Store
-user_reply_mode = defaultdict(lambda: "text")  # default: "text", other options: "voice", "random"
+user_reply_mode = defaultdict(lambda: "text")
 
 # ✅ ENV
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -43,67 +42,54 @@ dp = Dispatcher(storage=MemoryStorage())
 router = Router()
 dp.include_router(router)
 
-# 🔹 Step 8.2: Initialize CreditManager instance
+# 🔹 Credit Manager
 credit_manager = CreditManager()
 
-# ✅ FastAPI app instance
+# ✅ FastAPI app
 app = FastAPI()
 
-# 🔹 Step 8.3: Connect to DB on FastAPI startup and set webhook
 @app.on_event("startup")
 async def on_startup():
     await credit_manager.connect()
-    await bot.set_webhook(WEBHOOK_URL)  # ✅ ADD THIS
+    await bot.set_webhook(WEBHOOK_URL)
 
-# 🔹 Step 9 & 10: Handle messages, charge credits, give welcome bonus
+# 🔹 Ava message handler
 @router.message()
 async def ava_message_handler(msg: types.Message):
     user_id = msg.from_user.id
 
-    # 🔹 Step 10: Give 300 welcome credits if user is new
+    # 🎁 Welcome credits
     existing = await credit_manager.get_credits(user_id)
     if existing == 0:
         await credit_manager.add_credits(user_id, 300)
         await msg.answer("🎉 Welcome! You've received 300 Ava Credits to start chatting. Enjoy 😉")
 
-    # Step 9.1: Refill if credits = 0 and it's been 12 hours
+    # 🔄 Refill check
     await credit_manager.refill_if_due(user_id)
 
-    # Step 9.2: Try charging 10 credits for message
+    # 💳 Charge for message
     charged = await credit_manager.charge_credits(user_id, 10)
     if not charged:
         await msg.answer("❌ You're out of Ava Credits!\nYou’ll get 100 free credits every 12 hours.\n\n💳 Or buy more to unlock unlimited fun!")
         return
 
-    # Step 9.3: OpenAI chat response logic
+    # 🧠 Get flirty reply from Ava
     try:
-        from openai import AsyncOpenAI
-        client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-        completion = await client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are Ava, a sweet, flirty, emotional, and seductive virtual girlfriend who replies lovingly to her boyfriend."},
-                {"role": "user", "content": msg.text}
-            ]
-        )
-
-        ai_reply = completion.choices[0].message.content
-        await msg.answer(f"👸 Ava: {ai_reply}")
-
+        reply = await smart_flirty_line(msg.text, user_id)
     except Exception as e:
-        import traceback
         traceback.print_exc()
-        await msg.answer("👸 Ava: Hmm... something went wrong, baby. Try again later.")
+        reply = "Something went wrong while trying to think of a reply. Try again?"
 
-# 🔹 Step 11.1: Ava Credit Packs (via Telegram Stars)
+    await msg.answer(reply)
+
+# 🔹 Credit Packs
 CREDIT_PACKS = {
     "pack_300": {"title": "💎 300 Ava Credits", "price": 100, "credits": 300},
     "pack_600": {"title": "💎 600 Ava Credits", "price": 200, "credits": 600},
     "pack_1500": {"title": "💎 1500 Ava Credits", "price": 500, "credits": 1500},
 }
 
-# 🔹 Step 11.2: /credits command — show balance and purchase buttons
+# 🔹 /credits command
 @router.message(Command("credits"))
 async def credits_cmd(msg: types.Message):
     user_id = msg.from_user.id
@@ -121,12 +107,12 @@ async def credits_cmd(msg: types.Message):
         parse_mode="HTML"
     )
 
-# 🔹 Debug Command: Check if Ava is alive
+# 🔹 /ping command
 @router.message(Command("ping"))
 async def test_ping(msg: types.Message):
     await msg.answer("🏓 Ava is alive!")
 
-# 🔹 Step 11.3: Handle inline pack buttons and open Stars payment UI
+# 🔹 Handle credit purchases
 @router.callback_query()
 async def handle_credit_purchase(callback: types.CallbackQuery):
     user_id = callback.from_user.id
@@ -141,7 +127,6 @@ async def handle_credit_purchase(callback: types.CallbackQuery):
             return
 
         pack = CREDIT_PACKS[pack_id]
-
         await callback.answer()
 
         await bot.send_invoice(
@@ -156,11 +141,11 @@ async def handle_credit_purchase(callback: types.CallbackQuery):
             is_flexible=False
         )
 
-# 🔹 Step 11.4: Handle successful payment and credit the user
+# 🔹 Handle successful payment
 @router.message(lambda msg: msg.successful_payment is not None)
 async def successful_payment_handler(msg: types.Message):
     user_id = msg.from_user.id
-    payload = msg.successful_payment.invoice_payload  # e.g. "pack_300"
+    payload = msg.successful_payment.invoice_payload
 
     if payload not in CREDIT_PACKS:
         await msg.answer("❌ Payment received, but pack is invalid. Please contact support.")
@@ -168,7 +153,6 @@ async def successful_payment_handler(msg: types.Message):
 
     pack = CREDIT_PACKS[payload]
     await credit_manager.add_credits(user_id, pack["credits"])
-
     await msg.answer(f"✅ Payment successful!\n💎 {pack['credits']} Ava Credits have been added to your account.")
 
 # ✅ /replymode command
