@@ -234,6 +234,7 @@ async def process_gift_callback(callback: types.CallbackQuery):
         title=gift_key.replace("_", " ").title(),
         description="A special gift for Ava 💖",
         payload=gift_id,
+        provider_token="STARS",  # THIS IS THE CRUCIAL MISSING LINE
         currency="XTR",
         prices=[PRICE_MAPPING[gift_key]],
         start_parameter="gift",
