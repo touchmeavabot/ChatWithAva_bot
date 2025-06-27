@@ -11,7 +11,9 @@ class CreditManager:
 
     async def connect(self):
         db_url = os.getenv("DATABASE_URL")
-        print("🔌 Connecting to:", db_url)  # Debug line
+        print("🔌 Connecting to:", db_url)  # Debug log
+        if not db_url:
+            raise ValueError("❌ DATABASE_URL is not set in environment!")
         self.pool = await asyncpg.create_pool(dsn=db_url)
 
     async def get_credits(self, user_id: int) -> int:
@@ -24,14 +26,20 @@ class CreditManager:
         if credits < amount:
             return False
         async with self.pool.acquire() as conn:
-            await conn.execute("UPDATE user_credits SET credits = credits - $1 WHERE user_id = $2", amount, user_id)
+            await conn.execute(
+                "UPDATE user_credits SET credits = credits - $1 WHERE user_id = $2", amount, user_id
+            )
         return True
 
     async def add_credits(self, user_id: int, amount: int):
         async with self.pool.acquire() as conn:
-            exists = await conn.fetchval("SELECT EXISTS (SELECT 1 FROM user_credits WHERE user_id = $1)", user_id)
+            exists = await conn.fetchval(
+                "SELECT EXISTS (SELECT 1 FROM user_credits WHERE user_id = $1)", user_id
+            )
             if exists:
-                await conn.execute("UPDATE user_credits SET credits = credits + $1 WHERE user_id = $2", amount, user_id)
+                await conn.execute(
+                    "UPDATE user_credits SET credits = credits + $1 WHERE user_id = $2", amount, user_id
+                )
             else:
                 await conn.execute(
                     "INSERT INTO user_credits (user_id, credits, last_refill) VALUES ($1, $2, $3)",
@@ -40,7 +48,9 @@ class CreditManager:
 
     async def refill_if_due(self, user_id: int):
         async with self.pool.acquire() as conn:
-            row = await conn.fetchrow("SELECT credits, last_refill FROM user_credits WHERE user_id = $1", user_id)
+            row = await conn.fetchrow(
+                "SELECT credits, last_refill FROM user_credits WHERE user_id = $1", user_id
+            )
             if not row:
                 await self.add_credits(user_id, REFILL_AMOUNT)
                 return
