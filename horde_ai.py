@@ -22,25 +22,32 @@ async def generate_nsfw_image(prompt: str) -> str:
             "n": 1
         },
         "nsfw": True,
-        "models": ["midjourney-nyx", "deliberate-v2"]  # You can tweak or reduce to just one model
+        "models": ["midjourney-nyx", "deliberate-v2"]
     }
 
     async with httpx.AsyncClient() as client:
         r = await client.post(HORDE_API_URL, json=payload, headers=headers)
         r.raise_for_status()
         job = r.json()
-        job_id = job["id"]
+        job_id = job.get("id")
+        if not job_id:
+            raise Exception("Job ID not received from Horde")
 
-    # Now poll until the image is ready
+    # Now poll for the result
     fetch_url = f"https://stablehorde.net/api/v2/generate/status/{job_id}"
-    while True:
+    for attempt in range(60):  # wait max 60 x 2 seconds = 2 minutes
         async with httpx.AsyncClient() as client:
             status = await client.get(fetch_url)
+            status.raise_for_status()
             data = status.json()
+
             if data.get("done") is True:
                 generations = data.get("generations", [])
                 if generations:
                     return generations[0]["img"]
                 else:
-                    raise Exception("No image returned.")
-            await asyncio.sleep(2)
+                    raise Exception("Horde finished but returned no image.")
+            
+        await asyncio.sleep(2)
+
+    raise Exception("Image generation timed out after 2 minutes.")
