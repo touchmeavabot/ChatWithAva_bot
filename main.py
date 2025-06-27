@@ -397,6 +397,9 @@ async def chat_handler(msg: types.Message):
                         voice_file = generate_voice(voice_text)
 
                         if voice_file:
+                            # ⏱️ Simulated voice delay based on text length
+                            voice_delay = min(max(len(voice_text) * 0.045, 1.5), 6)
+                            await asyncio.sleep(voice_delay)
                             await bot.send_voice(chat_id=msg.chat.id, voice=voice_file)
                         else:
                             await msg.answer("Ava tried to speak but something went wrong 🥺")
@@ -405,9 +408,6 @@ async def chat_handler(msg: types.Message):
                     return
 
                 else:  # text mode
-                    await bot.send_chat_action(msg.chat.id, action=ChatAction.TYPING)
-                    await asyncio.sleep(1.2)
-
                     try:
                         response = client.chat.completions.create(
                             model="gpt-3.5-turbo",
@@ -434,6 +434,12 @@ async def chat_handler(msg: types.Message):
                         flirty = smart_flirty_line(full_message)
                         if flirty:
                             reply += "\n\n" + flirty
+
+                        # ⏱️ Simulated typing based on message length
+                        await bot.send_chat_action(msg.chat.id, action=ChatAction.TYPING)
+                        typing_delay = min(max(len(reply) * 0.045, 1.2), 6)
+                        await asyncio.sleep(typing_delay)
+
                         await bot.send_message(chat_id=msg.chat.id, text=reply)
                     except Exception as e:
                         await msg.answer(f"Ava couldn’t reply 😔 (Error: {e})")
@@ -443,7 +449,6 @@ async def chat_handler(msg: types.Message):
                 await msg.answer("Ava can’t understand this type of message baby 😅")
                 return
 
-        # Trigger message task quickly
         task = asyncio.create_task(handle_message())
         user_typing_cooldown[user_id] = task
 
