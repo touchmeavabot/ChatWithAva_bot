@@ -380,7 +380,7 @@ elif msg.voice:
 
     except Exception as e:
         try:
-            # fallback response if voice couldn't be understood
+            # 🩶 Soft AI fallback if transcription fails
             error_fallback = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
@@ -394,16 +394,15 @@ elif msg.voice:
                     },
                     {
                         "role": "user",
-                        "content": "I sent you a voice but you didn’t hear me right..."
+                        "content": "I sent you a voice but you didn't hear me right..."
                     }
                 ]
             )
             fallback_reply = error_fallback.choices[0].message.content
             await bot.send_message(msg.chat.id, text=fallback_reply)
-        except:
+        except Exception as fallback_error:
             await msg.answer("Ava couldn’t understand your voice baby 🥺 maybe try again?")
         return
-
             # ✍️ Handle text (or transcribed voice)
             if msg.text:
                 full_message = msg.text.strip()
