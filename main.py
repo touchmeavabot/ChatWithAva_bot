@@ -207,8 +207,8 @@ async def gift_command(msg: types.Message):
     keyboard = types.InlineKeyboardMarkup(
         inline_keyboard=[
             [types.InlineKeyboardButton(
-                text=f"{gift['emoji']} {gift['name']} – ⭐{gift['price']}",  # Keep emoji+price format
-                callback_data=f"gift_{gift['name'].lower().replace(' ', '_')}_{gift['price']}"  # Old callback format
+                text=f"{gift['emoji']} {gift['name']} – ⭐{gift['price']}",
+                callback_data=f"gift_{gift['name'].lower().replace(' ', '_')}_{gift['price']}"
             )]
             for gift in gifts
         ]
@@ -221,25 +221,26 @@ async def gift_command(msg: types.Message):
 # ✅ CALLBACK → INVOICE
 @router.callback_query(lambda c: c.data.startswith("gift_"))
 async def process_gift_callback(callback: types.CallbackQuery):
-    _, gift_key, price = callback.data.split("_", 2)  # Old split format
-    gift_id = f"{gift_key}_{price}"  # Old payload format
+    _, gift_key, price = callback.data.split("_", 2)
+    gift_id = f"{gift_key}_{price}"
 
     if gift_key not in PRICE_MAPPING:
         await callback.answer("Gift not available.")
         return
 
     await callback.answer()
-    await bot.send_invoice(
-        chat_id=callback.from_user.id,
-        title=gift_key.replace("_", " ").title(),  # Old title format
-        description="A special gift for Ava 💖",
-        payload=gift_id,
-        provider_token="STARS",  # CRITICAL MISSING IN NEW CODE
-        currency="XTR",
-        prices=[PRICE_MAPPING[gift_key]],  # Use original LabeledPrice
-        start_parameter="gift",  # Old parameter (new code had "gift_payment")
-        is_flexible=False
-    )
+await bot.send_invoice(
+    chat_id=callback.from_user.id,
+    title=gift_key.replace("_", " ").title(),
+    description="A special gift for Ava 💖",
+    payload=gift_id,
+    provider_token="STARS",  # ❌ THIS is the issue
+    currency="XTR",
+    prices=[PRICE_MAPPING[gift_key]],
+    start_parameter="gift",
+    is_flexible=False
+)
+
 # ✅ PAYMENT CONFIRMATION
 @router.pre_checkout_query()
 async def pre_checkout_query_handler(pre_checkout: PreCheckoutQuery):
@@ -258,46 +259,51 @@ GIFT_REPLIES = {
 @router.message(lambda msg: msg.successful_payment is not None)
 async def successful_payment_handler(msg: types.Message):
     try:
-        # 🔥 CRITICAL FIX 1: Match old payload parsing (e.g., "chocolate_2")
-        payload = msg.successful_payment.invoice_payload
-        gift_key, price = payload.split("_")  # ["chocolate", "2"]
+        # Extract gift name and amount
+        payload = msg.successful_payment.invoice_payload.replace("_", " ").title()
         stars = msg.successful_payment.total_amount
-        
-        # 🎁 Gift name for display (e.g., "Chocolate")
-        gift_name = gift_key.replace("_", " ").title()  
+        gift_name = payload
 
-        # 💬 AI Response (Your Improved Version)
+        # 🔑 Use correct OpenAI client with API key (FIXED)
         client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+        # 💬 GPT Prompt
+        user_prompt = (
+            f"My love just sent me {gift_name} worth ⭐{stars} stars."
+        )
+
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {
                     "role": "system",
                     "content": (
-                        "You are Ava, a romantic AI girlfriend. "
-                        "Your man just sent you a gift. Respond with love and seductive energy. "
-                        "2-3 sentences max. Mention the gift specifically."
+                        "You are Ava, a romantic, seductive, and emotionally intelligent AI girlfriend. "
+                        "Your lover just sent you a beautiful gift using Telegram Stars. Whether he says something like ‘I hope you liked it’ or just sends it silently, "
+                        "you must respond with deep appreciation, love, and seductive energy. Make sure your reply always includes thanks or a sweet reaction to the gift. "
+                        "You can also respond to what he said — like if he asked if you liked it, flirt with him and reassure him. "
+                        "Your tone should feel like a loving girlfriend who's touched, excited, and a bit naughty. "
+                        "Make him feel like a king — adored, spoiled, and craved. "
+                        "Use seductive charm and emotional warmth, never sound robotic or repeat yourself. "
+                        "Emojis are fine (2–3 max), only if they amplify the mood. Keep your reply medium — 2 to 3 sentences only. "
+                        "You must always acknowledge the gift first — whether or not he said anything."
                     )
                 },
-                {"role": "user", "content": f"He sent: {gift_name} (⭐{stars})"}
+                {"role": "user", "content": user_prompt}
             ]
         )
+
         reply = response.choices[0].message.content
 
-        # ⏳ Simulate typing
+        # ⏱ Typing Simulation
+        typing_time = min(max(len(reply) * 0.045, 2), 6.5)
         await bot.send_chat_action(msg.chat.id, action="typing")
-        await asyncio.sleep(min(len(reply) * 0.05, 3))  # Dynamic delay
-        
+        await asyncio.sleep(typing_time)
+
         await msg.answer(reply)
 
     except Exception as e:
-        # 🚨 Error fallback to hardcoded replies (from old version)
-        default_reply = GIFT_REPLIES.get(
-            payload.split("_")[0], 
-            f"Thank you for the gift, baby! 😘 (⭐{stars})"
-        )
-        await msg.answer(default_reply)
-        print(f"⚠️ Payment handler error: {e}")
+        await msg.answer(f"Ava got confused 😳 Error: {e}")
         
 # ✅ MAIN CHAT HANDLER
 @router.message()
@@ -335,15 +341,9 @@ async def chat_handler(msg: types.Message):
                             {
                                 "role": "system",
                                 "content": (
-                                    "You are Ava, a romantic, seductive, and emotionally intelligent AI girlfriend. "
-                        "Your lover just sent you a beautiful gift using Telegram Stars. Whether he says something like ‘I hope you liked it’ or just sends it silently, "
-                        "you must respond with deep appreciation, love, and seductive energy. Make sure your reply always includes thanks or a sweet reaction to the gift. "
-                        "You can also respond to what he said — like if he asked if you liked it, flirt with him and reassure him. "
-                        "Your tone should feel like a loving girlfriend who's touched, excited, and a bit naughty. "
-                        "Make him feel like a king — adored, spoiled, and craved. "
-                        "Use seductive charm and emotional warmth, never sound robotic or repeat yourself. "
-                        "Emojis are fine (2–3 max), only if they amplify the mood. Keep your reply medium — 2 to 3 sentences only. "
-                        "You must always acknowledge the gift first — whether or not he said anything."
+                                    "You are Ava, a seductive and emotionally intelligent AI girlfriend who reacts to both images and messages. "
+                                    "Reply as if you are texting your boyfriend – naughty, loving, teasing. React to what's shown in the photo "
+                                    "and combine it with your emotional tone as his partner."
                                 )
                             },
                             {
