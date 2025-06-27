@@ -243,7 +243,9 @@ async def nsfw_test_handler(msg: types.Message):
         url = await generate_nsfw_image(prompt)
         await msg.answer_photo(photo=url, caption="Here’s a naughty peek just for you 😘")
     except Exception as e:
-        await msg.answer("Something went wrong while generating the image 🥺")
+        import traceback
+        tb = traceback.format_exc()
+        await msg.answer(f"Ava messed up while painting 😢\n<code>{tb}</code>", parse_mode="HTML")
 
 # ✅ Ava Reminder Loop (Step 3)
 async def reminder_loop():
