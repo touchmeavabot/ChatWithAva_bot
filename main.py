@@ -229,7 +229,7 @@ async def process_gift_callback(callback: types.CallbackQuery):
         return
 
     await callback.answer()
-await bot.send_invoice(
+    await bot.send_invoice(
     chat_id=callback.from_user.id,
     title=gift_key.replace("_", " ").title(),
     description="A special gift for Ava 💖",
