@@ -54,10 +54,16 @@ app = FastAPI()
 async def on_startup():
     await credit_manager.connect()
 
-# 🔹 Step 9: Handle message with credit check and charge
+# 🔹 Step 9 & 10: Handle messages, charge credits, give welcome bonus
 @router.message()
 async def ava_message_handler(msg: types.Message):
     user_id = msg.from_user.id
+
+    # 🔹 Step 10: Give 300 welcome credits if user is new
+    existing = await credit_manager.get_credits(user_id)
+    if existing == 0:
+        await credit_manager.add_credits(user_id, 300)
+        await msg.answer("🎉 Welcome! You've received 300 Ava Credits to start chatting. Enjoy 😉")
 
     # Step 9.1: Refill if credits = 0 and it's been 12 hours
     await credit_manager.refill_if_due(user_id)
