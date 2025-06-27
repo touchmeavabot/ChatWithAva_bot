@@ -75,8 +75,11 @@ async def voice_command_handler(msg: types.Message):
         else:
             await msg.answer("Ava tried to speak but something went wrong 🥺")
 
-    except Exception as e:
-        await msg.answer(f"Ava got shy 😳 and couldn’t send her voice.\n<code>{str(e)}</code>", parse_mode="HTML")
+    import traceback
+
+except Exception as e:
+    tb = traceback.format_exc()
+    await msg.answer(f"Ava got shy 😳 and couldn’t send her voice.\n<code>{tb}</code>", parse_mode="HTML")
 
 # ✅ START
 @router.message(Command("start"))
