@@ -207,8 +207,8 @@ async def gift_command(msg: types.Message):
     keyboard = types.InlineKeyboardMarkup(
         inline_keyboard=[
             [types.InlineKeyboardButton(
-                text=f"{gift['emoji']} {gift['name']} – ⭐{gift['price']}",
-                callback_data=f"gift_{gift['name'].lower().replace(' ', '_')}_{gift['price']}"
+                text=f"{gift['emoji']} {gift['name']} – ⭐{gift['price']}",  # Keep emoji+price format
+                callback_data=f"gift_{gift['name'].lower().replace(' ', '_')}_{gift['price']}"  # Old callback format
             )]
             for gift in gifts
         ]
@@ -221,27 +221,25 @@ async def gift_command(msg: types.Message):
 # ✅ CALLBACK → INVOICE
 @router.callback_query(lambda c: c.data.startswith("gift_"))
 async def process_gift_callback(callback: types.CallbackQuery):
-    _, gift_key, price = callback.data.split("_", 2)
-    gift_id = f"{gift_key}_{price}"
+    _, gift_key, price = callback.data.split("_", 2)  # Old split format
+    gift_id = f"{gift_key}_{price}"  # Old payload format
 
     if gift_key not in PRICE_MAPPING:
         await callback.answer("Gift not available.")
         return
 
+    await callback.answer()
     await bot.send_invoice(
         chat_id=callback.from_user.id,
-        title=gift_key.replace("_", " ").title(),
+        title=gift_key.replace("_", " ").title(),  # Old title format
         description="A special gift for Ava 💖",
         payload=gift_id,
-        provider_token="STARS",
+        provider_token="STARS",  # CRITICAL MISSING IN NEW CODE
         currency="XTR",
-        prices=[PRICE_MAPPING[gift_key]],
-        start_parameter="gift",
+        prices=[PRICE_MAPPING[gift_key]],  # Use original LabeledPrice
+        start_parameter="gift",  # Old parameter (new code had "gift_payment")
         is_flexible=False
     )
-except Exception as e:
-    await callback.message.answer(f"Failed to create invoice: {e}")
-
 # ✅ PAYMENT CONFIRMATION
 @router.pre_checkout_query()
 async def pre_checkout_query_handler(pre_checkout: PreCheckoutQuery):
@@ -260,17 +258,16 @@ GIFT_REPLIES = {
 @router.message(lambda msg: msg.successful_payment is not None)
 async def successful_payment_handler(msg: types.Message):
     try:
-        # Extract gift name and amount
-        payload = msg.successful_payment.invoice_payload.replace("_", " ").title()
+        # 🔑 KEY FIX: Use payload format from old version (gift_key_price)
+        payload_parts = msg.successful_payment.invoice_payload.split("_")
+        gift_key = payload_parts[0]  # "chocolate", "rose" etc.
+        price = payload_parts[1] if len(payload_parts) > 1 else "0"
+        
         stars = msg.successful_payment.total_amount
-        gift_name = payload
+        gift_name = gift_key.replace("_", " ").title()  # Cleanup for display
 
-        # 🔑 Use correct OpenAI client with API key (FIXED)
-        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-        # 💬 GPT Prompt
-        user_prompt = (
-            f"My love just sent me {gift_name} worth ⭐{stars} stars."
+        # 💬 GPT Prompt (keep your existing improved logic)
+        user_prompt = f"My love just sent me {gift_name} worth ⭐{stars} stars."
         )
 
         response = client.chat.completions.create(
