@@ -42,29 +42,33 @@ dp = Dispatcher(storage=MemoryStorage())
 router = Router()
 dp.include_router(router)
 
-# ✅ /replymode UI
+# ✅ /replymode command
 @router.message(Command("replymode"))
-async def reply_mode_handler(msg: types.Message):
+async def reply_mode_cmd(msg: types.Message):
     kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="💬 Text", callback_data="set_mode_text")],
-        [InlineKeyboardButton(text="🎙️ Voice", callback_data="set_mode_voice")],
-        [InlineKeyboardButton(text="🔁 Random", callback_data="set_mode_random")]
+        [
+            InlineKeyboardButton(text="💬 Text", callback_data="reply_text"),
+            InlineKeyboardButton(text="🎙️ Voice", callback_data="reply_voice"),
+            InlineKeyboardButton(text="🔁 Random", callback_data="reply_random"),
+        ]
     ])
-    await msg.answer("Choose how Ava should reply to you:", reply_markup=kb)
+    await msg.answer("How should Ava reply to you? Choose your preference:", reply_markup=kb)
 
+# ✅ Callback query handler
 @router.callback_query()
-async def mode_selection_handler(callback: types.CallbackQuery):
-    user_id = callback.from_user.id
-    if callback.data == "set_mode_text":
+async def handle_reply_mode_callback(callback_query: types.CallbackQuery):
+    user_id = callback_query.from_user.id
+    data = callback_query.data
+
+    if data == "reply_text":
         user_reply_mode[user_id] = "text"
-        await callback.message.edit_text("💬 Ava will now reply in text.")
-    elif callback.data == "set_mode_voice":
+        await callback_query.message.edit_text("✅ Ava will now reply with 💬 Text only.")
+    elif data == "reply_voice":
         user_reply_mode[user_id] = "voice"
-        await callback.message.edit_text("🎙️ Ava will now reply in voice.")
-    elif callback.data == "set_mode_random":
+        await callback_query.message.edit_text("✅ Ava will now reply with 🎙️ Voice only.")
+    elif data == "reply_random":
         user_reply_mode[user_id] = "random"
-        await callback.message.edit_text("🔁 Ava will now reply randomly in voice or text.")
-    await callback.answer()
+        await callback_query.message.edit_text("✅ Ava will now reply with 🔁 Random (text & voice).")
 
 # ✅ VOICE COMMAND
 @router.message(Command("voice"))
