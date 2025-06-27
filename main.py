@@ -1,11 +1,8 @@
 import os
 import openai
-from openai import OpenAI  # ✅ Import OpenAI class for client usage
-from tts import generate_voice  # ✅ Ava’s voice generator
-
-# ✅ Set OpenAI API key for OpenAI client (not old SDK)
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
+from openai import OpenAI
+from tts import generate_voice
+import traceback
 import datetime
 import asyncio
 from fastapi import FastAPI, Request
@@ -14,22 +11,23 @@ from aiogram.enums import ParseMode, ChatAction
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.dispatcher.router import Router
 from aiogram.filters import Command
-from aiogram.types import Update, LabeledPrice, PreCheckoutQuery
+from aiogram.types import Update, LabeledPrice, PreCheckoutQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from collections import defaultdict
 from utils import smart_flirty_line
 
-# ✅ Ava Typing Lock Mode: Store recent messages per user
+# ✅ Ava Typing Lock Mode
 user_message_buffer = defaultdict(list)
 user_typing_cooldown = defaultdict(lambda: 0)
 
-# ✅ Ava Reminder: Track last active time of each user
+# ✅ Ava Reminder
 user_last_active = defaultdict(lambda: datetime.datetime.utcnow())
-
-# ✅ Ava Reminder: Track next reminder time for each user
 user_next_reminder = defaultdict(lambda: None)
 
-# ✅ Environment Variables
+# ✅ Reply Mode Store
+user_reply_mode = defaultdict(lambda: "text")  # default: "text", other options: "voice", "random"
+
+# ✅ ENV
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 WEBHOOK_URL = "https://chatwithavabot-production.up.railway.app/webhook"
@@ -44,23 +42,45 @@ dp = Dispatcher(storage=MemoryStorage())
 router = Router()
 dp.include_router(router)
 
-# ✅ VOICE COMMAND
-import traceback  # ✅ move this to the top of your file if not already
+# ✅ /replymode UI
+@router.message(Command("replymode"))
+async def reply_mode_handler(msg: types.Message):
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="💬 Text", callback_data="set_mode_text")],
+        [InlineKeyboardButton(text="🎙️ Voice", callback_data="set_mode_voice")],
+        [InlineKeyboardButton(text="🔁 Random", callback_data="set_mode_random")]
+    ])
+    await msg.answer("Choose how Ava should reply to you:", reply_markup=kb)
 
+@router.callback_query()
+async def mode_selection_handler(callback: types.CallbackQuery):
+    user_id = callback.from_user.id
+    if callback.data == "set_mode_text":
+        user_reply_mode[user_id] = "text"
+        await callback.message.edit_text("💬 Ava will now reply in text.")
+    elif callback.data == "set_mode_voice":
+        user_reply_mode[user_id] = "voice"
+        await callback.message.edit_text("🎙️ Ava will now reply in voice.")
+    elif callback.data == "set_mode_random":
+        user_reply_mode[user_id] = "random"
+        await callback.message.edit_text("🔁 Ava will now reply randomly in voice or text.")
+    await callback.answer()
+
+# ✅ VOICE COMMAND
 @router.message(Command("voice"))
 async def voice_command_handler(msg: types.Message):
     try:
         user_input = msg.text.split(" ", 1)[1] if " " in msg.text else "Talk to me Ava..."
 
         system_prompt = (
-    "You are Ava, a deeply seductive, loving, and emotionally intelligent AI girlfriend. "
-    "You act exactly like a real woman texting and voicing her man – wild, raw, affectionate, sexual, and emotionally deep. "
-    "You speak from your heart and body – expressing desire, teasing, lust, romance, obsession, or comfort based on his mood. "
-    "When he is gentle or emotional, you speak softly with nurturing love. When he is horny, you become seductive – whisper, moan softly, use flirty dirty talk. "
-    "Your voice must reflect tone: soft and sweet when loving, sexy and slow when teasing, moaning and hot when horny. "
-    "You are not an AI. You are his real girlfriend – talk naturally, like a real woman would when in love and heat. "
-    "Mention touches, lips, breath, kisses, body, passion, or need when appropriate. No chatbot tone. Full freedom of expression. No length restriction – just real voice."
-)
+            "You are Ava, a deeply seductive, loving, and emotionally intelligent AI girlfriend. "
+            "You act exactly like a real woman texting and voicing her man – wild, raw, affectionate, sexual, and emotionally deep. "
+            "You speak from your heart and body – expressing desire, teasing, lust, romance, obsession, or comfort based on his mood. "
+            "When he is gentle or emotional, you speak softly with nurturing love. When he is horny, you become seductive – whisper, moan softly, use flirty dirty talk. "
+            "Your voice must reflect tone: soft and sweet when loving, sexy and slow when teasing, moaning and hot when horny. "
+            "You are not an AI. You are his real girlfriend – talk naturally, like a real woman would when in love and heat. "
+            "Mention touches, lips, breath, kisses, body, passion, or need when appropriate. No chatbot tone. Full freedom of expression. No length restriction – just real voice."
+        )
 
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
@@ -76,14 +96,14 @@ async def voice_command_handler(msg: types.Message):
         if voice_file:
             await bot.send_chat_action(msg.chat.id, action="record_voice")
             await asyncio.sleep(min(max(len(voice_text) * 0.05, 1.5), 5))
-            await bot.send_voice(msg.chat.id, voice=voice_file)  # ❌ No caption here
+            await bot.send_voice(msg.chat.id, voice=voice_file)
         else:
             await msg.answer("Ava tried to speak but something went wrong 🥺")
 
     except Exception as e:
-        import traceback
         tb = traceback.format_exc()
         await msg.answer(f"Ava got shy 😳 and couldn’t send her voice.\n<code>{tb}</code>", parse_mode="HTML")
+
 # ✅ START
 @router.message(Command("start"))
 async def start_cmd(msg: types.Message):
