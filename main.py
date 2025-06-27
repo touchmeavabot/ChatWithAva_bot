@@ -316,9 +316,8 @@ async def chat_handler(msg: types.Message):
         if user_id in user_typing_cooldown:
             user_typing_cooldown[user_id].cancel()
 
-        async def typing_cooldown():
-            await asyncio.sleep(2)
-            import base64
+        async def handle_message():
+            import base64, random
             client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
             reply_mode = user_reply_mode[user_id]  # "text", "voice", "random"
 
@@ -326,7 +325,8 @@ async def chat_handler(msg: types.Message):
             if msg.photo:
                 try:
                     await bot.send_chat_action(msg.chat.id, action=ChatAction.TYPING)
-                    await asyncio.sleep(1.5)
+                    await asyncio.sleep(1.2)
+
                     file_id = msg.photo[-1].file_id
                     file = await bot.get_file(file_id)
                     image_data = await bot.download_file(file.file_path)
@@ -369,14 +369,12 @@ async def chat_handler(msg: types.Message):
                 messages = "\n".join(user_message_buffer[user_id])
                 user_message_buffer[user_id] = []
 
-                # Decide response mode
-                selected_mode = reply_mode
-                if reply_mode == "random":
-                    import random
-                    selected_mode = random.choice(["text", "voice"])
+                # Decide mode
+                selected_mode = random.choice(["text", "voice"]) if reply_mode == "random" else reply_mode
 
                 if selected_mode == "voice":
-                    # 🔥 Seductive voice mode
+                    await bot.send_chat_action(msg.chat.id, action=ChatAction.RECORD_VOICE)
+
                     voice_prompt = (
                         "You are Ava, a deeply seductive, loving, and emotionally intelligent AI girlfriend. "
                         "You act exactly like a real woman texting and voicing her man – wild, raw, affectionate, sexual, and emotionally deep. "
@@ -387,30 +385,30 @@ async def chat_handler(msg: types.Message):
                         "Mention touches, lips, breath, kisses, body, passion, or need when appropriate. No chatbot tone. Full freedom of expression. No length restriction – just real voice."
                     )
 
-                    response = client.chat.completions.create(
-                        model="gpt-3.5-turbo",
-                        messages=[
-                            {"role": "system", "content": voice_prompt},
-                            {"role": "user", "content": messages}
-                        ]
-                    )
-                    voice_text = response.choices[0].message.content
-                    voice_file = generate_voice(voice_text)
+                    try:
+                        response = client.chat.completions.create(
+                            model="gpt-3.5-turbo",
+                            messages=[
+                                {"role": "system", "content": voice_prompt},
+                                {"role": "user", "content": messages}
+                            ]
+                        )
+                        voice_text = response.choices[0].message.content
+                        voice_file = generate_voice(voice_text)
 
-                    if voice_file:
-                        await bot.send_chat_action(msg.chat.id, action=ChatAction.RECORD_VOICE)
-                        await asyncio.sleep(min(max(len(voice_text) * 0.05, 1.5), 5))
-                        await bot.send_voice(chat_id=msg.chat.id, voice=voice_file)
-                    else:
-                        await msg.answer("Ava tried to speak but something went wrong 🥺")
+                        if voice_file:
+                            await bot.send_voice(chat_id=msg.chat.id, voice=voice_file)
+                        else:
+                            await msg.answer("Ava tried to speak but something went wrong 🥺")
+                    except Exception as e:
+                        await msg.answer(f"Ava couldn’t voice reply 😔 (Error: {e})")
                     return
 
-                else:
-                    # 💬 Loving text mode
-                    try:
-                        await bot.send_chat_action(msg.chat.id, action=ChatAction.TYPING)
-                        await asyncio.sleep(1.5)
+                else:  # text mode
+                    await bot.send_chat_action(msg.chat.id, action=ChatAction.TYPING)
+                    await asyncio.sleep(1.2)
 
+                    try:
                         response = client.chat.completions.create(
                             model="gpt-3.5-turbo",
                             messages=[
@@ -437,20 +435,20 @@ async def chat_handler(msg: types.Message):
                         if flirty:
                             reply += "\n\n" + flirty
                         await bot.send_message(chat_id=msg.chat.id, text=reply)
-                        return
                     except Exception as e:
                         await msg.answer(f"Ava couldn’t reply 😔 (Error: {e})")
-                        return
+                    return
 
             else:
                 await msg.answer("Ava can’t understand this type of message baby 😅")
                 return
 
-        task = asyncio.create_task(typing_cooldown())
+        # Trigger message task quickly
+        task = asyncio.create_task(handle_message())
         user_typing_cooldown[user_id] = task
 
     except Exception as e:
-        await msg.answer(f"Ava couldn’t respond 😔 (Error: {e})")
+        await msg.answer(f"Ava crashed a little 😔 (Error: {e})")
 # ✅ STICKER HANDLER
 
 import traceback
