@@ -221,25 +221,31 @@ async def gift_command(msg: types.Message):
 # ✅ CALLBACK → INVOICE
 @router.callback_query(lambda c: c.data.startswith("gift_"))
 async def process_gift_callback(callback: types.CallbackQuery):
-    _, gift_key, price = callback.data.split("_", 2)
-    gift_id = f"{gift_key}_{price}"
+    try:
+        # Split the callback data into parts
+        _, gift_key, price = callback.data.split("_", 2)
+        gift_id = f"{gift_key}_{price}"
 
-    if gift_key not in PRICE_MAPPING:
-        await callback.answer("Gift not available.")
-        return
+        # Ensure gift exists in price mapping
+        if gift_key not in PRICE_MAPPING:
+            await callback.answer("Gift not available.")
+            return
 
-    await callback.answer()
-    await bot.send_invoice(
-        chat_id=callback.from_user.id,
-        title=gift_key.replace("_", " ").title(),
-        description="A special gift for Ava 💖",
-        payload=gift_id,
-        provider_token="STARS",
-        currency="XTR",
-        prices=[PRICE_MAPPING[gift_key]],
-        start_parameter="gift",
-        is_flexible=False
-    )
+        await callback.answer()  # Acknowledge the callback press
+
+        await bot.send_invoice(
+            chat_id=callback.from_user.id,
+            title=gift_key.replace("_", " ").title(),
+            description="A special gift for Ava 💖",
+            payload=gift_id,
+            provider_token="STARS",  # This should be the official token, not literal "STARS"
+            currency="XTR",  # or whatever currency you're using, e.g., 'USD'
+            prices=[PRICE_MAPPING[gift_key]],
+            start_parameter="gift",
+            is_flexible=False
+        )
+    except Exception as e:
+        await callback.message.answer(f"Ava had a gift issue 😢 Error: {e}")
 
 # ✅ PAYMENT CONFIRMATION
 @router.pre_checkout_query()
