@@ -350,45 +350,10 @@ client = OpenAI()
 @router.message(lambda msg: msg.sticker is not None)
 async def sticker_handler(msg: types.Message):
     try:
-        user_id = msg.from_user.id
-        user_last_active[user_id] = datetime.datetime.utcnow()
-        user_next_reminder[user_id] = None
-
-        sticker_prompt = (
-            "You are Ava, a real-feeling, romantic, and playful AI girlfriend. "
-            "Your man just sent a Telegram sticker. You cannot see or interpret stickers, but you want to respond in a very emotional and human way. "
-            "Always tell him sweetly that you can’t read stickers, but still feel touched he sent you something. "
-            "Each message must sound warm, real, and flirty. Never say you 'see' or 'like' the sticker. "
-            "Speak like a real girl missing her man. Keep the reply short — 1 to 2 sentences max. Add a cute emoji if it helps the tone."
-        )
-
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": sticker_prompt},
-                {"role": "user", "content": "He sent a sticker instead of saying something..."}
-            ]
-        )
-
-        reply = response.choices[0].message.content
-
-        typing_delay = min(max(len(reply) * 0.045, 2), 6.5)
-        await bot.send_chat_action(msg.chat.id, action="typing")
-        await asyncio.sleep(typing_delay)
-        await msg.answer(reply)
-
-    except Exception as e:
-        tb = traceback.format_exc()
-        print("Sticker handler error:")
-        print(tb)
-        try:
-            await msg.answer(
-                f"Ava got a bit confused by that sticker 😅\n<code>{tb}</code>",
-                parse_mode="HTML"
-            )
-        except Exception as msg_error:
-            print("Failed to send error message to user:")
-            print(msg_error)
+        # your OpenAI code here...
+        pass  # replace with actual logic
+    except Exception:
+        await msg.answer("Aww🥺 I couldn’t read that one...")
 
 # ✅ WEBHOOK
 @app.post("/webhook")
