@@ -138,21 +138,23 @@ async def reply_mode_cmd(msg: types.Message):
     ])
     await msg.answer("How should Ava reply to you? Choose your preference:", reply_markup=kb)
 
-# ✅ Callback query handler
-@router.callback_query()
-async def handle_reply_mode_callback(callback_query: types.CallbackQuery):
-    user_id = callback_query.from_user.id
-    data = callback_query.data
+# ✅ Reply Mode Callback Handler
+@router.callback_query(lambda call: call.data in ["reply_text", "reply_voice", "reply_random"])
+async def handle_reply_mode_callback(callback: types.CallbackQuery):
+    user_id = callback.from_user.id
+    data = callback.data
 
     if data == "reply_text":
         user_reply_mode[user_id] = "text"
-        await callback_query.message.edit_text("✅ Ava will now reply with 💬 Text only.")
+        await callback.message.edit_text("✅ Ava will now reply with 💬 Text only.")
     elif data == "reply_voice":
         user_reply_mode[user_id] = "voice"
-        await callback_query.message.edit_text("✅ Ava will now reply with 🎙️ Voice only.")
+        await callback.message.edit_text("✅ Ava will now reply with 🎙️ Voice only.")
     elif data == "reply_random":
         user_reply_mode[user_id] = "random"
-        await callback_query.message.edit_text("✅ Ava will now reply with 🔁 Random (text & voice).")
+        await callback.message.edit_text("✅ Ava will now reply with 🔁 Random (text & voice).")
+
+    await callback.answer()
 
 # ✅ VOICE COMMAND
 @router.message(Command("voice"))
