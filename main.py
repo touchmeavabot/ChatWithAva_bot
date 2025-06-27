@@ -53,35 +53,6 @@ async def on_startup():
     await credit_manager.connect()
     await bot.set_webhook(WEBHOOK_URL)
 
-# 🔹 Ava message handler
-@router.message()
-async def ava_message_handler(msg: types.Message):
-    user_id = msg.from_user.id
-
-    # 🎁 Welcome credits
-    existing = await credit_manager.get_credits(user_id)
-    if existing == 0:
-        await credit_manager.add_credits(user_id, 300)
-        await msg.answer("🎉 Welcome! You've received 300 Ava Credits to start chatting. Enjoy 😉")
-
-    # 🔄 Refill check
-    await credit_manager.refill_if_due(user_id)
-
-    # 💳 Charge for message
-    charged = await credit_manager.charge_credits(user_id, 10)
-    if not charged:
-        await msg.answer("❌ You're out of Ava Credits!\nYou’ll get 100 free credits every 12 hours.\n\n💳 Or buy more to unlock unlimited fun!")
-        return
-
-    # 🧠 Get flirty reply from Ava
-    try:
-        reply = await smart_flirty_line(msg.text, user_id)
-    except Exception as e:
-        traceback.print_exc()
-        reply = "Something went wrong while trying to think of a reply. Try again?"
-
-    await msg.answer(reply)
-
 # 🔹 Credit Packs
 CREDIT_PACKS = {
     "pack_300": {"title": "💎 300 Ava Credits", "price": 100, "credits": 300},
@@ -425,6 +396,18 @@ async def chat_handler(msg: types.Message):
         user_id = msg.from_user.id
         user_last_active[user_id] = datetime.datetime.utcnow()
         user_next_reminder[user_id] = None
+
+        # 🟩 Ava Credits Flow
+        existing = await credit_manager.get_credits(user_id)
+        if existing == 0:
+            await credit_manager.add_credits(user_id, 300)
+            await msg.answer("🎉 Welcome! You've received 300 Ava Credits to start chatting. Enjoy 😉")
+
+        await credit_manager.refill_if_due(user_id)
+        charged = await credit_manager.charge_credits(user_id, 10)
+        if not charged:
+            await msg.answer("❌ You're out of Ava Credits!\\nYou’ll get 100 free credits every 12 hours.\\n\\n💳 Or buy more to unlock unlimited fun!")
+            return
 
         if user_id in user_typing_cooldown:
             user_typing_cooldown[user_id].cancel()
