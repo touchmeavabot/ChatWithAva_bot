@@ -376,7 +376,7 @@ elif msg.voice:
             f.write(voice_data.read())
 
         # Convert OGG to WAV
-        audio = AudioSegment.from_ogg(ogg_path)
+        audio = AudioSegment.from_file(ogg_path, format="ogg")
         audio.export(wav_path, format="wav")
 
         # Send to Whisper
