@@ -350,10 +350,9 @@ client = OpenAI()
 @router.message(lambda msg: msg.sticker is not None)
 async def sticker_handler(msg: types.Message):
     try:
-        # your OpenAI code here...
-        pass  # replace with actual logic
+        await msg.answer("Aww🥺 I can’t see stickers, but I know you’re thinking of me!")
     except Exception:
-        await msg.answer("Aww🥺 I couldn’t read that one...")
+        await msg.answer("Something went wrong, love 🥺")
 
 # ✅ WEBHOOK
 @app.post("/webhook")
