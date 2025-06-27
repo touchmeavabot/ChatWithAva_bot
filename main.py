@@ -1,6 +1,7 @@
 import os
 import openai
 from openai import OpenAI  # ✅ Import OpenAI class for client usage
+from tts import generate_voice  # ✅ Ava’s voice generator
 
 # ✅ Set OpenAI API key for OpenAI client (not old SDK)
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -9,16 +10,39 @@ import datetime
 import asyncio
 from fastapi import FastAPI, Request
 from aiogram import Bot, Dispatcher, types
-from aiogram.enums import ParseMode
+from aiogram.enums import ParseMode, ChatAction
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.dispatcher.router import Router
 from aiogram.filters import Command
 from aiogram.types import Update, LabeledPrice, PreCheckoutQuery
 from aiogram.fsm.context import FSMContext
-from utils import smart_flirty_line
 from collections import defaultdict
-from aiogram.enums import ChatAction
-from tts import generate_voice  # ✅ Ava’s voice generator
+from utils import smart_flirty_line
+
+# ✅ Ava Typing Lock Mode: Store recent messages per user
+user_message_buffer = defaultdict(list)
+user_typing_cooldown = defaultdict(lambda: 0)
+
+# ✅ Ava Reminder: Track last active time of each user
+user_last_active = defaultdict(lambda: datetime.datetime.utcnow())
+
+# ✅ Ava Reminder: Track next reminder time for each user
+user_next_reminder = defaultdict(lambda: None)
+
+# ✅ Environment Variables
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+WEBHOOK_URL = "https://chatwithavabot-production.up.railway.app/webhook"
+
+if not BOT_TOKEN:
+    raise Exception("BOT_TOKEN not set!")
+if not OPENAI_API_KEY:
+    raise Exception("OPENAI_API_KEY not set!")
+
+bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.HTML)
+dp = Dispatcher(storage=MemoryStorage())
+router = Router()
+dp.include_router(router)
 
 # ✅ VOICE COMMAND
 @router.message(Command("voice"))
@@ -59,31 +83,6 @@ async def voice_command_handler(msg: types.Message):
 @router.message(Command("start"))
 async def start_cmd(msg: types.Message):
     await msg.answer("Hey baby 😘 Ava is alive and ready for you.")
-
-# ✅ Ava Typing Lock Mode: Store recent messages per user
-user_message_buffer = defaultdict(list)
-user_typing_cooldown = defaultdict(lambda: 0)
-
-# ✅ Ava Reminder: Track last active time of each user
-user_last_active = defaultdict(lambda: datetime.datetime.utcnow())
-
-# ✅ Ava Reminder: Track next reminder time for each user
-user_next_reminder = defaultdict(lambda: None)
-
-# ✅ Environment Variables
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-WEBHOOK_URL = "https://chatwithavabot-production.up.railway.app/webhook"
-
-if not BOT_TOKEN:
-    raise Exception("BOT_TOKEN not set!")
-if not OPENAI_API_KEY:
-    raise Exception("OPENAI_API_KEY not set!")
-
-bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.HTML)
-dp = Dispatcher(storage=MemoryStorage())
-router = Router()
-dp.include_router(router)
 
 # ✅ GIFT DATA
 gifts = [
