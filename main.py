@@ -360,7 +360,7 @@ async def chat_handler(msg: types.Message):
                     await msg.answer(f"Ava couldn’t react to the photo 😔 (Error: {e})")
                     return
 
-                        # 🎤 Handle voice message with Whisper
+            # 🎤 Handle voice message with Whisper
             elif msg.voice:
                 try:
                     file_id = msg.voice.file_id
@@ -377,10 +377,12 @@ async def chat_handler(msg: types.Message):
                             file=audio_file
                         )
 
-                    if transcript.text.strip():
-                        msg.text = transcript.text.strip()  # Inject transcript as text
+                    transcript_text = transcript.text.strip()
+
+                    if transcript_text:
+                        msg.text = transcript_text  # Inject transcribed text
                     else:
-                        raise ValueError("Whisper transcription was empty.")
+                        raise ValueError("Empty transcript")
 
                 except Exception:
                     try:
