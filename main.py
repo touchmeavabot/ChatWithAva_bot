@@ -228,18 +228,19 @@ async def process_gift_callback(callback: types.CallbackQuery):
         await callback.answer("Gift not available.")
         return
 
-    await callback.answer()
     await bot.send_invoice(
         chat_id=callback.from_user.id,
         title=gift_key.replace("_", " ").title(),
         description="A special gift for Ava 💖",
         payload=gift_id,
-        provider_token="STARS",  # THIS IS THE CRUCIAL MISSING LINE
+        provider_token="STARS",
         currency="XTR",
         prices=[PRICE_MAPPING[gift_key]],
         start_parameter="gift",
         is_flexible=False
     )
+except Exception as e:
+    await callback.message.answer(f"Failed to create invoice: {e}")
 
 # ✅ PAYMENT CONFIRMATION
 @router.pre_checkout_query()
