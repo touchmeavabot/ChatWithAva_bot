@@ -49,10 +49,11 @@ credit_manager = CreditManager()
 # ✅ FastAPI app instance
 app = FastAPI()
 
-# 🔹 Step 8.3: Connect to DB on FastAPI startup
+# 🔹 Step 8.3: Connect to DB on FastAPI startup and set webhook
 @app.on_event("startup")
 async def on_startup():
     await credit_manager.connect()
+    await bot.set_webhook(WEBHOOK_URL)  # ✅ ADD THIS
 
 # 🔹 Step 9 & 10: Handle messages, charge credits, give welcome bonus
 @router.message()
@@ -76,12 +77,14 @@ async def ava_message_handler(msg: types.Message):
 
     # Step 9.3: Reply normally (replace with your OpenAI logic)
     await msg.answer("👸 Ava: I'm here, baby. Let’s talk...")  # Placeholder
+
 # 🔹 Step 11.1: Ava Credit Packs (via Telegram Stars)
 CREDIT_PACKS = {
     "pack_300": {"title": "💎 300 Ava Credits", "price": 100, "credits": 300},
     "pack_600": {"title": "💎 600 Ava Credits", "price": 200, "credits": 600},
     "pack_1500": {"title": "💎 1500 Ava Credits", "price": 500, "credits": 1500},
 }
+
 # 🔹 Step 11.2: /credits command — show balance and purchase buttons
 @router.message(Command("credits"))
 async def credits_cmd(msg: types.Message):
@@ -99,6 +102,11 @@ async def credits_cmd(msg: types.Message):
         reply_markup=kb,
         parse_mode="HTML"
     )
+
+# 🔹 Debug Command: Check if Ava is alive
+@router.message(Command("ping"))
+async def test_ping(msg: types.Message):
+    await msg.answer("🏓 Ava is alive!")
 
 # 🔹 Step 11.3: Handle inline pack buttons and open Stars payment UI
 @router.callback_query()
