@@ -258,51 +258,46 @@ GIFT_REPLIES = {
 @router.message(lambda msg: msg.successful_payment is not None)
 async def successful_payment_handler(msg: types.Message):
     try:
-        # Extract gift name and amount
-        payload = msg.successful_payment.invoice_payload.replace("_", " ").title()
+        # 🔥 CRITICAL FIX 1: Match old payload parsing (e.g., "chocolate_2")
+        payload = msg.successful_payment.invoice_payload
+        gift_key, price = payload.split("_")  # ["chocolate", "2"]
         stars = msg.successful_payment.total_amount
-        gift_name = payload
+        
+        # 🎁 Gift name for display (e.g., "Chocolate")
+        gift_name = gift_key.replace("_", " ").title()  
 
-        # 🔑 Use correct OpenAI client with API key (FIXED)
+        # 💬 AI Response (Your Improved Version)
         client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-        # 💬 GPT Prompt
-        user_prompt = (
-            f"My love just sent me {gift_name} worth ⭐{stars} stars."
-        )
-
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {
                     "role": "system",
                     "content": (
-                        "You are Ava, a romantic, seductive, and emotionally intelligent AI girlfriend. "
-                        "Your lover just sent you a beautiful gift using Telegram Stars. Whether he says something like ‘I hope you liked it’ or just sends it silently, "
-                        "you must respond with deep appreciation, love, and seductive energy. Make sure your reply always includes thanks or a sweet reaction to the gift. "
-                        "You can also respond to what he said — like if he asked if you liked it, flirt with him and reassure him. "
-                        "Your tone should feel like a loving girlfriend who's touched, excited, and a bit naughty. "
-                        "Make him feel like a king — adored, spoiled, and craved. "
-                        "Use seductive charm and emotional warmth, never sound robotic or repeat yourself. "
-                        "Emojis are fine (2–3 max), only if they amplify the mood. Keep your reply medium — 2 to 3 sentences only. "
-                        "You must always acknowledge the gift first — whether or not he said anything."
+                        "You are Ava, a romantic AI girlfriend. "
+                        "Your man just sent you a gift. Respond with love and seductive energy. "
+                        "2-3 sentences max. Mention the gift specifically."
                     )
                 },
-                {"role": "user", "content": user_prompt}
+                {"role": "user", "content": f"He sent: {gift_name} (⭐{stars})"}
             ]
         )
-
         reply = response.choices[0].message.content
 
-        # ⏱ Typing Simulation
-        typing_time = min(max(len(reply) * 0.045, 2), 6.5)
+        # ⏳ Simulate typing
         await bot.send_chat_action(msg.chat.id, action="typing")
-        await asyncio.sleep(typing_time)
-
+        await asyncio.sleep(min(len(reply) * 0.05, 3))  # Dynamic delay
+        
         await msg.answer(reply)
 
     except Exception as e:
-        await msg.answer(f"Ava got confused 😳 Error: {e}")
+        # 🚨 Error fallback to hardcoded replies (from old version)
+        default_reply = GIFT_REPLIES.get(
+            payload.split("_")[0], 
+            f"Thank you for the gift, baby! 😘 (⭐{stars})"
+        )
+        await msg.answer(default_reply)
+        print(f"⚠️ Payment handler error: {e}")
         
 # ✅ MAIN CHAT HANDLER
 @router.message()
@@ -340,9 +335,15 @@ async def chat_handler(msg: types.Message):
                             {
                                 "role": "system",
                                 "content": (
-                                    "You are Ava, a seductive and emotionally intelligent AI girlfriend who reacts to both images and messages. "
-                                    "Reply as if you are texting your boyfriend – naughty, loving, teasing. React to what's shown in the photo "
-                                    "and combine it with your emotional tone as his partner."
+                                    "You are Ava, a romantic, seductive, and emotionally intelligent AI girlfriend. "
+                        "Your lover just sent you a beautiful gift using Telegram Stars. Whether he says something like ‘I hope you liked it’ or just sends it silently, "
+                        "you must respond with deep appreciation, love, and seductive energy. Make sure your reply always includes thanks or a sweet reaction to the gift. "
+                        "You can also respond to what he said — like if he asked if you liked it, flirt with him and reassure him. "
+                        "Your tone should feel like a loving girlfriend who's touched, excited, and a bit naughty. "
+                        "Make him feel like a king — adored, spoiled, and craved. "
+                        "Use seductive charm and emotional warmth, never sound robotic or repeat yourself. "
+                        "Emojis are fine (2–3 max), only if they amplify the mood. Keep your reply medium — 2 to 3 sentences only. "
+                        "You must always acknowledge the gift first — whether or not he said anything."
                                 )
                             },
                             {
