@@ -10,7 +10,14 @@ from aiogram.enums import ParseMode, ChatAction
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.dispatcher.router import Router
 from aiogram.filters import Command
-from aiogram.types import Update, LabeledPrice, PreCheckoutQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import (
+    Update,
+    LabeledPrice,
+    PreCheckoutQuery,
+    InlineKeyboardMarkup,
+    InlineKeyboardButton,
+    CallbackQuery,
+)
 from aiogram.fsm.context import FSMContext
 from collections import defaultdict
 from utils import smart_flirty_line
@@ -78,39 +85,33 @@ async def credits_cmd(msg: types.Message):
         parse_mode="HTML"
     )
 
-# 🔹 /ping command
-@router.message(Command("ping"))
-async def test_ping(msg: types.Message):
-    await msg.answer("🏓 Ava is alive!")
-
 # 🔹 Handle credit purchases
-@router.callback_query()
+@router.callback_query(lambda c: c.data.startswith("buy_pack_"))
 async def handle_credit_purchase(callback: types.CallbackQuery):
     user_id = callback.from_user.id
     data = callback.data
 
-    if data.startswith("buy_pack_"):
-        pack_key = data.replace("buy_pack_", "")
-        pack_id = f"pack_{pack_key}"
+    pack_key = data.replace("buy_pack_", "")
+    pack_id = f"pack_{pack_key}"
 
-        if pack_id not in CREDIT_PACKS:
-            await callback.answer("❌ Invalid pack", show_alert=True)
-            return
+    if pack_id not in CREDIT_PACKS:
+        await callback.answer("❌ Invalid pack", show_alert=True)
+        return
 
-        pack = CREDIT_PACKS[pack_id]
-        await callback.answer()
+    pack = CREDIT_PACKS[pack_id]
+    await callback.answer()
 
-        await bot.send_invoice(
-            chat_id=user_id,
-            title=pack["title"],
-            description=f"{pack['credits']} Ava Credits",
-            payload=pack_id,
-            provider_token="STARS",
-            currency="XTR",
-            prices=[LabeledPrice(label=pack['title'], amount=pack["price"])],
-            start_parameter="buy_credits",
-            is_flexible=False
-        )
+    await bot.send_invoice(
+        chat_id=user_id,
+        title=pack["title"],
+        description=f"{pack['credits']} Ava Credits",
+        payload=pack_id,
+        provider_token="STARS",
+        currency="XTR",
+        prices=[LabeledPrice(label=pack['title'], amount=pack["price"])],
+        start_parameter="buy_credits",
+        is_flexible=False
+    )
 
 # 🔹 Handle successful payment
 @router.message(lambda msg: msg.successful_payment is not None)
@@ -138,23 +139,27 @@ async def reply_mode_cmd(msg: types.Message):
     ])
     await msg.answer("How should Ava reply to you? Choose your preference:", reply_markup=kb)
 
-# ✅ Reply Mode Callback Handler (works with Aiogram 3.3.0)
-@router.callback_query(lambda c: c.data in ["reply_text", "reply_voice", "reply_random"])
-async def handle_reply_mode_callback(callback: types.CallbackQuery):
-    user_id = callback.from_user.id
+# ✅ Unified Callback Handler for Credits + ReplyMode
+@router.callback_query(lambda c: True)
+async def unified_callback_handler(callback: CallbackQuery):
     data = callback.data
+    user_id = callback.from_user.id
 
-    if data == "reply_text":
-        user_reply_mode[user_id] = "text"
-        await callback.message.edit_text("✅ Ava will now reply with 💬 Text only.")
-    elif data == "reply_voice":
-        user_reply_mode[user_id] = "voice"
-        await callback.message.edit_text("✅ Ava will now reply with 🎙️ Voice only.")
-    elif data == "reply_random":
-        user_reply_mode[user_id] = "random"
-        await callback.message.edit_text("✅ Ava will now reply with 🔁 Random (text & voice).")
+    # Handle reply mode
+    if data in ["reply_text", "reply_voice", "reply_random"]:
+        if data == "reply_text":
+            user_reply_mode[user_id] = "text"
+            await callback.message.edit_text("✅ Ava will now reply with 💬 Text only.")
+        elif data == "reply_voice":
+            user_reply_mode[user_id] = "voice"
+            await callback.message.edit_text("✅ Ava will now reply with 🎙️ Voice only.")
+        elif data == "reply_random":
+            user_reply_mode[user_id] = "random"
+            await callback.message.edit_text("✅ Ava will now reply with 🔁 Random (text & voice).")
+        await callback.answer()
+        return
 
-    await callback.answer()
+    # Future fallback logic can go here
 
 # ✅ VOICE COMMAND
 @router.message(Command("voice"))
