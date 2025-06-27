@@ -15,6 +15,7 @@ from aiogram.types import Update, LabeledPrice, PreCheckoutQuery, InlineKeyboard
 from aiogram.fsm.context import FSMContext
 from collections import defaultdict
 from utils import smart_flirty_line
+from credits import CreditManager  # ✅ Step 8.1: Import CreditManager
 
 # ✅ Ava Typing Lock Mode
 user_message_buffer = defaultdict(list)
@@ -41,6 +42,9 @@ bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.HTML)
 dp = Dispatcher(storage=MemoryStorage())
 router = Router()
 dp.include_router(router)
+
+# 🔹 Step 8.2: Initialize CreditManager instance
+credit_manager = CreditManager()
 
 # ✅ /replymode command
 @router.message(Command("replymode"))
