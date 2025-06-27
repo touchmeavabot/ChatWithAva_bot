@@ -73,11 +73,12 @@ async def voice_command_handler(msg: types.Message):
         if voice_file:
             await bot.send_chat_action(msg.chat.id, action="record_voice")
             await asyncio.sleep(min(max(len(voice_text) * 0.05, 1.5), 5))
-            await bot.send_voice(msg.chat.id, voice=voice_file, caption=voice_text)
+            await bot.send_voice(msg.chat.id, voice=voice_file)  # ❌ No caption here
         else:
             await msg.answer("Ava tried to speak but something went wrong 🥺")
 
     except Exception as e:
+        import traceback
         tb = traceback.format_exc()
         await msg.answer(f"Ava got shy 😳 and couldn’t send her voice.\n<code>{tb}</code>", parse_mode="HTML")
 # ✅ START
