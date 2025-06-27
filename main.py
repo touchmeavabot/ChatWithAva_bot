@@ -76,6 +76,30 @@ async def ava_message_handler(msg: types.Message):
 
     # Step 9.3: Reply normally (replace with your OpenAI logic)
     await msg.answer("👸 Ava: I'm here, baby. Let’s talk...")  # Placeholder
+# 🔹 Step 11.1: Ava Credit Packs (via Telegram Stars)
+CREDIT_PACKS = {
+    "pack_300": {"title": "💎 300 Ava Credits", "price": 100, "credits": 300},
+    "pack_600": {"title": "💎 600 Ava Credits", "price": 200, "credits": 600},
+    "pack_1500": {"title": "💎 1500 Ava Credits", "price": 500, "credits": 1500},
+}
+# 🔹 Step 11.2: /credits command — show balance and purchase buttons
+@router.message(Command("credits"))
+async def credits_cmd(msg: types.Message):
+    user_id = msg.from_user.id
+    balance = await credit_manager.get_credits(user_id)
+
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="💳 Buy 300 Credits (100⭐)", callback_data="buy_pack_300")],
+        [InlineKeyboardButton(text="💳 Buy 600 Credits (200⭐)", callback_data="buy_pack_600")],
+        [InlineKeyboardButton(text="💳 Buy 1500 Credits (500⭐)", callback_data="buy_pack_1500")]
+    ])
+
+    await msg.answer(
+        f"💰 Your Ava Credits Balance: <b>{balance}</b>\n\nChoose a pack to top-up using Telegram Stars 💫",
+        reply_markup=kb,
+        parse_mode="HTML"
+    )
+
 # ✅ /replymode command
 @router.message(Command("replymode"))
 async def reply_mode_cmd(msg: types.Message):
