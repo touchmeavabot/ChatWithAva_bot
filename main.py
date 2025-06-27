@@ -75,8 +75,26 @@ async def ava_message_handler(msg: types.Message):
         await msg.answer("❌ You're out of Ava Credits!\nYou’ll get 100 free credits every 12 hours.\n\n💳 Or buy more to unlock unlimited fun!")
         return
 
-    # Step 9.3: Reply normally (replace with your OpenAI logic)
-    await msg.answer("👸 Ava: I'm here, baby. Let’s talk...")  # Placeholder
+    # Step 9.3: OpenAI chat response logic
+    try:
+        from openai import AsyncOpenAI
+        client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+        completion = await client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are Ava, a sweet, flirty, emotional, and seductive virtual girlfriend who replies lovingly to her boyfriend."},
+                {"role": "user", "content": msg.text}
+            ]
+        )
+
+        ai_reply = completion.choices[0].message.content
+        await msg.answer(f"👸 Ava: {ai_reply}")
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        await msg.answer("👸 Ava: Hmm... something went wrong, baby. Try again later.")
 
 # 🔹 Step 11.1: Ava Credit Packs (via Telegram Stars)
 CREDIT_PACKS = {
