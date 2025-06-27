@@ -221,30 +221,25 @@ async def gift_command(msg: types.Message):
 # ✅ CALLBACK → INVOICE
 @router.callback_query(lambda c: c.data.startswith("gift_"))
 async def process_gift_callback(callback: types.CallbackQuery):
-    try:
-        _, gift_key, price = callback.data.split("_", 2)
-        gift_id = f"{gift_key}_{price}"
+    _, gift_key, price = callback.data.split("_", 2)
+    gift_id = f"{gift_key}_{price}"
 
-        if gift_key not in PRICE_MAPPING:
-            await callback.answer("Gift not available.")
-            return
+    if gift_key not in PRICE_MAPPING:
+        await callback.answer("Gift not available.")
+        return
 
-        await callback.answer("Preparing your gift invoice...")  # fix: ensure it's acknowledged first
-
-        await bot.send_invoice(
-            chat_id=callback.from_user.id,
-            title=gift_key.replace("_", " ").title(),
-            description="A special gift for Ava 💖",
-            payload=gift_id,
-            provider_token="STARS",  # ✅ make sure this is allowed/test token if testing
-            currency="XTR",
-            prices=[PRICE_MAPPING[gift_key]],
-            start_parameter="gift",
-            is_flexible=False
-        )
-
-    except Exception as e:
-        await callback.message.answer(f"Failed to create invoice 😢\nError: {e}")
+    await callback.answer()
+    await bot.send_invoice(
+        chat_id=callback.from_user.id,
+        title=gift_key.replace("_", " ").title(),
+        description="A special gift for Ava 💖",
+        payload=gift_id,
+        provider_token="STARS",
+        currency="XTR",
+        prices=[PRICE_MAPPING[gift_key]],
+        start_parameter="gift",
+        is_flexible=False
+    )
 
 # ✅ PAYMENT CONFIRMATION
 @router.pre_checkout_query()
