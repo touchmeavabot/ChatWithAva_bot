@@ -234,8 +234,7 @@ async def process_gift_callback(callback: types.CallbackQuery):
     title=gift_key.replace("_", " ").title(),
     description="A special gift for Ava 💖",
     payload=gift_id,
-    provider_token="STARS",  # ❌ THIS is the issue
-    currency="XTR",
+    currency="XTR",  # Still needed for Stars
     prices=[PRICE_MAPPING[gift_key]],
     start_parameter="gift",
     is_flexible=False
