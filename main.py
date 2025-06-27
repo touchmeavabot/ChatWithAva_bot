@@ -100,6 +100,51 @@ async def credits_cmd(msg: types.Message):
         parse_mode="HTML"
     )
 
+# 🔹 Step 11.3: Handle inline pack buttons and open Stars payment UI
+@router.callback_query()
+async def handle_credit_purchase(callback: types.CallbackQuery):
+    user_id = callback.from_user.id
+    data = callback.data
+
+    if data.startswith("buy_pack_"):
+        pack_key = data.replace("buy_pack_", "")
+        pack_id = f"pack_{pack_key}"
+
+        if pack_id not in CREDIT_PACKS:
+            await callback.answer("❌ Invalid pack", show_alert=True)
+            return
+
+        pack = CREDIT_PACKS[pack_id]
+
+        await callback.answer()
+
+        await bot.send_invoice(
+            chat_id=user_id,
+            title=pack["title"],
+            description=f"{pack['credits']} Ava Credits",
+            payload=pack_id,
+            provider_token="STARS",
+            currency="XTR",
+            prices=[LabeledPrice(label=pack['title'], amount=pack["price"])],
+            start_parameter="buy_credits",
+            is_flexible=False
+        )
+
+# 🔹 Step 11.4: Handle successful payment and credit the user
+@router.message(lambda msg: msg.successful_payment is not None)
+async def successful_payment_handler(msg: types.Message):
+    user_id = msg.from_user.id
+    payload = msg.successful_payment.invoice_payload  # e.g. "pack_300"
+
+    if payload not in CREDIT_PACKS:
+        await msg.answer("❌ Payment received, but pack is invalid. Please contact support.")
+        return
+
+    pack = CREDIT_PACKS[payload]
+    await credit_manager.add_credits(user_id, pack["credits"])
+
+    await msg.answer(f"✅ Payment successful!\n💎 {pack['credits']} Ava Credits have been added to your account.")
+
 # ✅ /replymode command
 @router.message(Command("replymode"))
 async def reply_mode_cmd(msg: types.Message):
