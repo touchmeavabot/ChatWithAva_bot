@@ -654,11 +654,16 @@ async def sticker_handler(msg: types.Message):
 # ✅ WEBHOOK
 @app.post("/webhook")
 async def webhook_handler(request: Request):
+    # 🔹 Step 0: Ensure DB is connected
+    if credit_manager.pool is None:
+        await credit_manager.connect()
+
     data = await request.json()
     update = Update.model_validate(data)
     await dp.feed_update(bot, update)
     return {"ok": True}
 
+# ✅ Set webhook on startup
 @app.on_event("startup")
 async def on_startup():
     await bot.set_webhook(WEBHOOK_URL)
