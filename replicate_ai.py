@@ -1,12 +1,13 @@
 import replicate
 import os
 
-# Set token from env
+# ✅ Set token from environment variable
 replicate_client = replicate.Client(api_token=os.getenv("REPLICATE_API_TOKEN"))
 
+# ✅ NSFW image generation function
 async def generate_nsfw_image(prompt: str) -> str:
     output = replicate_client.run(
-        "cjwbw/stable-diffusion:db21e45bdfac1a03c2d5b14a3d944b355ed0a31297937f1974c5f997d0b50c6e",
+        "cjwbw/stable-diffusion",  # ✅ Use base model name instead of broken version hash
         input={
             "prompt": prompt,
             "width": 512,
@@ -17,4 +18,4 @@ async def generate_nsfw_image(prompt: str) -> str:
             "num_inference_steps": 30
         }
     )
-    return output[0]  # URL of the generated image
+    return output[0]  # Returns URL of generated image
