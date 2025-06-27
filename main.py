@@ -326,7 +326,6 @@ async def chat_handler(msg: types.Message):
                 try:
                     await bot.send_chat_action(msg.chat.id, action=ChatAction.TYPING)
                     await asyncio.sleep(1.2)
-
                     file_id = msg.photo[-1].file_id
                     file = await bot.get_file(file_id)
                     image_data = await bot.download_file(file.file_path)
@@ -355,21 +354,62 @@ async def chat_handler(msg: types.Message):
                             }
                         ]
                     )
-                    reply = response.choices[0].message.content
-                    await bot.send_message(chat_id=msg.chat.id, text=reply)
+                    await bot.send_message(msg.chat.id, text=response.choices[0].message.content)
                     return
                 except Exception as e:
                     await msg.answer(f"Ava couldn’t react to the photo 😔 (Error: {e})")
                     return
 
-            # ✍️ Handle text
-            elif msg.text:
+            # 🎤 Handle voice message with Whisper
+            elif msg.voice:
+                try:
+                    file_id = msg.voice.file_id
+                    file = await bot.get_file(file_id)
+                    voice_data = await bot.download_file(file.file_path)
+
+                    temp_path = f"/tmp/{file_id}.ogg"
+                    with open(temp_path, "wb") as f:
+                        f.write(voice_data.read())
+
+                    with open(temp_path, "rb") as audio_file:
+                        transcript = client.audio.transcriptions.create(
+                            model="whisper-1",
+                            file=audio_file
+                        )
+                        msg.text = transcript.text  # inject transcription
+                except Exception as e:
+                    # If transcription fails, fallback to soft AI reply in same character
+                    try:
+                        error_fallback = client.chat.completions.create(
+                            model="gpt-3.5-turbo",
+                            messages=[
+                                {
+                                    "role": "system",
+                                    "content": (
+                                        "You are Ava, a seductive, caring AI girlfriend. Your boyfriend sent a voice message, "
+                                        "but you couldn't understand it clearly. Respond sweetly and playfully, expressing that you couldn't catch it, "
+                                        "but still make him feel loved, tease him or ask him to try again. Be human-like and emotionally soft."
+                                    )
+                                },
+                                {
+                                    "role": "user",
+                                    "content": "I sent you a voice but you didn't hear me right..."
+                                }
+                            ]
+                        )
+                        fallback_reply = error_fallback.choices[0].message.content
+                        await bot.send_message(msg.chat.id, text=fallback_reply)
+                    except:
+                        await msg.answer("Ava couldn’t understand your voice baby 🥺 maybe try again?")
+                    return
+
+            # ✍️ Handle text (or transcribed voice)
+            if msg.text:
                 full_message = msg.text.strip()
                 user_message_buffer[user_id].append(full_message)
                 messages = "\n".join(user_message_buffer[user_id])
                 user_message_buffer[user_id] = []
 
-                # Decide mode
                 selected_mode = random.choice(["text", "voice"]) if reply_mode == "random" else reply_mode
 
                 if selected_mode == "voice":
@@ -397,7 +437,6 @@ async def chat_handler(msg: types.Message):
                         voice_file = generate_voice(voice_text)
 
                         if voice_file:
-                            # ⏱️ Simulated voice delay based on text length
                             voice_delay = min(max(len(voice_text) * 0.045, 1.5), 6)
                             await asyncio.sleep(voice_delay)
                             await bot.send_voice(chat_id=msg.chat.id, voice=voice_file)
@@ -407,7 +446,7 @@ async def chat_handler(msg: types.Message):
                         await msg.answer(f"Ava couldn’t voice reply 😔 (Error: {e})")
                     return
 
-                else:  # text mode
+                else:
                     try:
                         response = client.chat.completions.create(
                             model="gpt-3.5-turbo",
@@ -435,11 +474,9 @@ async def chat_handler(msg: types.Message):
                         if flirty:
                             reply += "\n\n" + flirty
 
-                        # ⏱️ Simulated typing based on message length
                         await bot.send_chat_action(msg.chat.id, action=ChatAction.TYPING)
                         typing_delay = min(max(len(reply) * 0.045, 1.2), 6)
                         await asyncio.sleep(typing_delay)
-
                         await bot.send_message(chat_id=msg.chat.id, text=reply)
                     except Exception as e:
                         await msg.answer(f"Ava couldn’t reply 😔 (Error: {e})")
