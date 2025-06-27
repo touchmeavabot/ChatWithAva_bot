@@ -37,7 +37,7 @@ async def generate_nsfw_image(prompt: str) -> str:
         async with httpx.AsyncClient() as client:
             status = await client.get(fetch_url)
             data = status.json()
-            if data["done"]:
+            if data.get("done") is True:
                 generations = data.get("generations", [])
                 if generations:
                     return generations[0]["img"]
