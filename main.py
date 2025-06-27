@@ -139,7 +139,7 @@ async def reply_mode_cmd(msg: types.Message):
     await msg.answer("How should Ava reply to you? Choose your preference:", reply_markup=kb)
 
 # ✅ Reply Mode Callback Handler
-@router.callback_query(lambda call: call.data in ["reply_text", "reply_voice", "reply_random"])
+@router.callback_query(Text(text=["reply_text", "reply_voice", "reply_random"]))
 async def handle_reply_mode_callback(callback: types.CallbackQuery):
     user_id = callback.from_user.id
     data = callback.data
