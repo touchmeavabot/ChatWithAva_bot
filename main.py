@@ -46,6 +46,14 @@ dp.include_router(router)
 # 🔹 Step 8.2: Initialize CreditManager instance
 credit_manager = CreditManager()
 
+# ✅ FastAPI app instance
+app = FastAPI()
+
+# 🔹 Step 8.3: Connect to DB on FastAPI startup
+@app.on_event("startup")
+async def on_startup():
+    await credit_manager.connect()
+
 # ✅ /replymode command
 @router.message(Command("replymode"))
 async def reply_mode_cmd(msg: types.Message):
