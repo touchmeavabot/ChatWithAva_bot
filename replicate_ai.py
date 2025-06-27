@@ -1,11 +1,11 @@
-import replicate, os
+import os
+import replicate
 
-# Set token from env
 replicate_client = replicate.Client(api_token=os.getenv("REPLICATE_API_TOKEN"))
 
 async def generate_nsfw_image(prompt: str) -> str:
     output = replicate_client.run(
-        "stability-ai/stable-diffusion:ac732df8",  # Stable Diffusion 2.1
+        "cjwbw/stable-diffusion:<correct-version-id>",
         input={
             "prompt": prompt,
             "width": 512,
@@ -13,7 +13,8 @@ async def generate_nsfw_image(prompt: str) -> str:
             "num_outputs": 1,
             "scheduler": "DPMSolverMultistep",
             "guidance_scale": 7.5,
-            "num_inference_steps": 30
-        }
+            "num_inference_steps": 30,
+        },
+        use_file_output=False  # <<< restores URL behavior
     )
-    return output[0]  # This is the image URL
+    return output[0]
