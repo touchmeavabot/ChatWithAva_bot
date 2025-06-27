@@ -45,6 +45,8 @@ router = Router()
 dp.include_router(router)
 
 # ✅ VOICE COMMAND
+import traceback  # ✅ move this to the top of your file if not already
+
 @router.message(Command("voice"))
 async def voice_command_handler(msg: types.Message):
     try:
@@ -75,12 +77,9 @@ async def voice_command_handler(msg: types.Message):
         else:
             await msg.answer("Ava tried to speak but something went wrong 🥺")
 
-    import traceback
-
-except Exception as e:
-    tb = traceback.format_exc()
-    await msg.answer(f"Ava got shy 😳 and couldn’t send her voice.\n<code>{tb}</code>", parse_mode="HTML")
-
+    except Exception as e:
+        tb = traceback.format_exc()
+        await msg.answer(f"Ava got shy 😳 and couldn’t send her voice.\n<code>{tb}</code>", parse_mode="HTML")
 # ✅ START
 @router.message(Command("start"))
 async def start_cmd(msg: types.Message):
