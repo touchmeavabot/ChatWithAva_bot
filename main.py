@@ -258,16 +258,17 @@ GIFT_REPLIES = {
 @router.message(lambda msg: msg.successful_payment is not None)
 async def successful_payment_handler(msg: types.Message):
     try:
-        # 🔑 KEY FIX: Use payload format from old version (gift_key_price)
-        payload_parts = msg.successful_payment.invoice_payload.split("_")
-        gift_key = payload_parts[0]  # "chocolate", "rose" etc.
-        price = payload_parts[1] if len(payload_parts) > 1 else "0"
-        
+        # Extract gift name and amount
+        payload = msg.successful_payment.invoice_payload.replace("_", " ").title()
         stars = msg.successful_payment.total_amount
-        gift_name = gift_key.replace("_", " ").title()  # Cleanup for display
+        gift_name = payload
 
-        # 💬 GPT Prompt (keep your existing improved logic)
-        user_prompt = f"My love just sent me {gift_name} worth ⭐{stars} stars."
+        # 🔑 Use correct OpenAI client with API key (FIXED)
+        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+        # 💬 GPT Prompt
+        user_prompt = (
+            f"My love just sent me {gift_name} worth ⭐{stars} stars."
         )
 
         response = client.chat.completions.create(
