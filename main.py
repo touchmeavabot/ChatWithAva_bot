@@ -54,6 +54,22 @@ app = FastAPI()
 async def on_startup():
     await credit_manager.connect()
 
+# 🔹 Step 9: Handle message with credit check and charge
+@router.message()
+async def ava_message_handler(msg: types.Message):
+    user_id = msg.from_user.id
+
+    # Step 9.1: Refill if credits = 0 and it's been 12 hours
+    await credit_manager.refill_if_due(user_id)
+
+    # Step 9.2: Try charging 10 credits for message
+    charged = await credit_manager.charge_credits(user_id, 10)
+    if not charged:
+        await msg.answer("❌ You're out of Ava Credits!\nYou’ll get 100 free credits every 12 hours.\n\n💳 Or buy more to unlock unlimited fun!")
+        return
+
+    # Step 9.3: Reply normally (replace with your OpenAI logic)
+    await msg.answer("👸 Ava: I'm here, baby. Let’s talk...")  # Placeholder
 # ✅ /replymode command
 @router.message(Command("replymode"))
 async def reply_mode_cmd(msg: types.Message):
