@@ -10,7 +10,6 @@ from aiogram.enums import ParseMode, ChatAction
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.dispatcher.router import Router
 from aiogram.filters import Command
-from aiogram.filters import Text
 from aiogram.types import Update, LabeledPrice, PreCheckoutQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from collections import defaultdict
