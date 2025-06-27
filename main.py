@@ -22,6 +22,7 @@ from aiogram.fsm.context import FSMContext
 from collections import defaultdict
 from utils import smart_flirty_line
 from credits import CreditManager
+from replicate_ai import generate_nsfw_image
 
 # ✅ Ava Typing Lock Mode
 user_message_buffer = defaultdict(list)
@@ -228,10 +229,21 @@ app = FastAPI()
 async def health():
     return {"message": "TouchMeAva is online 🥰"}
 
-# ✅ START
+# ✅ Start Command (merged into one)
 @router.message(Command("start"))
 async def start_cmd(msg: types.Message):
     await msg.answer("Hey baby 😘 Ava is alive and ready for you.")
+
+# ✅ NSFW Image Generator Command
+@router.message(Command("nude"))
+async def nsfw_test_handler(msg: types.Message):
+    await msg.answer("Ava is painting something naughty for you… 🎨🔥")
+    prompt = "sexy woman, bedroom lighting, sultry pose, lingerie, same model, NSFW, photorealistic"
+    try:
+        url = await generate_nsfw_image(prompt)
+        await msg.answer_photo(photo=url, caption="Here’s a naughty peek just for you 😘")
+    except Exception as e:
+        await msg.answer("Something went wrong while generating the image 🥺")
 
 # ✅ Ava Reminder Loop (Step 3)
 async def reminder_loop():
