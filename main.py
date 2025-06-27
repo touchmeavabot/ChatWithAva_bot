@@ -360,55 +360,60 @@ async def chat_handler(msg: types.Message):
                     await msg.answer(f"Ava couldn’t react to the photo 😔 (Error: {e})")
                     return
 
-            # 🎤 Handle voice message with Whisper
-            elif msg.voice:
-                try:
-                    file_id = msg.voice.file_id
-                    file = await bot.get_file(file_id)
-                    voice_data = await bot.download_file(file.file_path)
+            from pydub import AudioSegment  # ensure this is installed
 
-                    temp_path = f"/tmp/{file_id}.ogg"
-                    with open(temp_path, "wb") as f:
-                        f.write(voice_data.read())
+# 🎤 Handle voice message with Whisper
+elif msg.voice:
+    try:
+        file_id = msg.voice.file_id
+        file = await bot.get_file(file_id)
+        voice_data = await bot.download_file(file.file_path)
 
-                    with open(temp_path, "rb") as audio_file:
-                        transcript = client.audio.transcriptions.create(
-                            model="whisper-1",
-                            file=audio_file
+        ogg_path = f"/tmp/{file_id}.ogg"
+        wav_path = f"/tmp/{file_id}.wav"
+
+        with open(ogg_path, "wb") as f:
+            f.write(voice_data.read())
+
+        # Convert OGG to WAV
+        audio = AudioSegment.from_ogg(ogg_path)
+        audio.export(wav_path, format="wav")
+
+        # Send to Whisper
+        with open(wav_path, "rb") as audio_file:
+            transcript = client.audio.transcriptions.create(
+                model="whisper-1",
+                file=audio_file
+            )
+
+        if transcript.text.strip():
+            msg.text = transcript.text.strip()
+        else:
+            raise ValueError("Whisper returned empty text.")
+
+    except Exception as e:
+        try:
+            fallback = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are Ava, a seductive, caring AI girlfriend. Your boyfriend sent a voice message, "
+                            "but you couldn't understand it clearly. Respond sweetly and playfully, expressing that you couldn't catch it, "
+                            "but still make him feel loved, tease him or ask him to try again. Be human-like and emotionally soft."
                         )
-
-                    transcript_text = transcript.text.strip()
-
-                    if transcript_text:
-                        msg.text = transcript_text  # Inject transcribed text
-                    else:
-                        raise ValueError("Empty transcript")
-
-                except Exception:
-                    try:
-                        error_fallback = client.chat.completions.create(
-                            model="gpt-3.5-turbo",
-                            messages=[
-                                {
-                                    "role": "system",
-                                    "content": (
-                                        "You are Ava, a seductive, caring AI girlfriend. Your boyfriend sent a voice message, "
-                                        "but you couldn't understand it clearly. Respond sweetly and playfully, expressing that you couldn't catch it, "
-                                        "but still make him feel loved, tease him or ask him to try again. Be human-like and emotionally soft."
-                                    )
-                                },
-                                {
-                                    "role": "user",
-                                    "content": "I sent you a voice but you didn't hear me right..."
-                                }
-                            ]
-                        )
-                        fallback_reply = error_fallback.choices[0].message.content
-                        await bot.send_message(msg.chat.id, text=fallback_reply)
-                    except:
-                        await msg.answer("Ava couldn’t understand your voice baby 🥺 maybe try again?")
-                    return
-
+                    },
+                    {
+                        "role": "user",
+                        "content": "I sent you a voice but you didn't hear me right..."
+                    }
+                ]
+            )
+            await bot.send_message(msg.chat.id, text=fallback.choices[0].message.content)
+        except:
+            await msg.answer("Ava couldn’t understand your voice baby 🥺 maybe try again?")
+        return
             # ✍️ Handle text (or transcribed voice)
             if msg.text:
                 full_message = msg.text.strip()
