@@ -6,7 +6,7 @@ from aiogram import types
 ELEVENLABS_API_KEY = os.getenv("ELEVEN_API_KEY")
 
 # ✅ ElevenLabs TTS voice ID – you can change this to any better sounding female voice
-VOICE_ID = "EXAVITQu4vr4xnSDxMaL"  # Default: Rachel (realistic female). Change if needed.
+VOICE_ID = "BpjGufoPiobT79j2vtj4"  # Default: Rachel (realistic female). Change if needed.
 
 def generate_voice(text: str, filename: str = "ava_voice.mp3"):
     try:
