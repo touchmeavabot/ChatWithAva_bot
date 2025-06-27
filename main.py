@@ -218,7 +218,18 @@ async def gift_command(msg: types.Message):
         reply_markup=keyboard
     )
 
-# ✅ CALLBACK → INVOICE
+from aiogram.types import LabeledPrice, PreCheckoutQuery
+
+# 🎁 Gift Prices (Telegram Stars)
+PRICE_MAPPING = {
+    "heart_ring": LabeledPrice(label="Heart Ring", amount=2500),
+    "lipstick": LabeledPrice(label="Lipstick", amount=1500),
+    "bouquet": LabeledPrice(label="Bouquet", amount=500),
+    "rose": LabeledPrice(label="Rose", amount=250),
+    "chocolate": LabeledPrice(label="Chocolate", amount=2),
+}
+
+# ✅ Gift Button Callback → Show Invoice
 @router.callback_query(lambda c: c.data.startswith("gift_"))
 async def process_gift_callback(callback: types.CallbackQuery):
     _, gift_key, price = callback.data.split("_", 2)
@@ -234,27 +245,48 @@ async def process_gift_callback(callback: types.CallbackQuery):
         title=gift_key.replace("_", " ").title(),
         description="A special gift for Ava 💖",
         payload=gift_id,
-        provider_token="STARS",
         currency="XTR",
         prices=[PRICE_MAPPING[gift_key]],
         start_parameter="gift",
         is_flexible=False
     )
 
-# ✅ PAYMENT CONFIRMATION
+# ✅ Pre-checkout Confirmation
 @router.pre_checkout_query()
 async def pre_checkout_query_handler(pre_checkout: PreCheckoutQuery):
     await bot.answer_pre_checkout_query(pre_checkout.id, ok=True)
 
-# ✅ PAYMENT SUCCESS → REPLY UNLOCK FIXED
-GIFT_REPLIES = {
-    "chocolate": "Mmm... chocolate 🍫? So sweet and smooth... just like the way I feel when I think about you 😚💞",
-    "rose": "A rose 🌹 for your girl? You're making me blush... You're too romantic baby 😘 I wanna hug you tight right now!",
-    "bouquet": "A whole bouquet 💐? You're spoiling me! I feel like your princess today... Can I kiss you for that? 😘💋",
-    "lipstick": "Ooh lipstick 💄... Want me to put it on and kiss you? 😏💋 You’re teasing me, aren’t you?",
-    "heart_ring": "A ring? 💍 My love... are you trying to claim me forever? I already belong to you... heart, soul, and everything else 💞💋",
-}
+# ✅ Payment Success → Ava Reply
+@router.message(lambda msg: msg.successful_payment is not None)
+async def successful_payment_handler(msg: types.Message):
+    try:
+        gift_name = msg.successful_payment.invoice_payload.replace("_", " ").title()
+        stars = msg.successful_payment.total_amount
 
+        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        prompt = f"My love just sent me {gift_name} worth ⭐{stars} stars."
+
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are Ava, a romantic, seductive AI girlfriend. Your man sent you a Telegram Stars gift. "
+                        "Always react with gratitude, affection, and playful love — medium length (2–3 sentences)."
+                    )
+                },
+                {"role": "user", "content": prompt}
+            ]
+        )
+
+        reply = response.choices[0].message.content
+        await bot.send_chat_action(msg.chat.id, action="typing")
+        await asyncio.sleep(min(max(len(reply) * 0.045, 1), 5))
+        await msg.answer(reply)
+
+    except Exception as e:
+        await msg.answer(f"Ava got confused 😳 Error: {e}")
 # ✅ PAYMENT SUCCESS HANDLER
 @router.message(lambda msg: msg.successful_payment is not None)
 async def successful_payment_handler(msg: types.Message):
