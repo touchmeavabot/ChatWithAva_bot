@@ -66,13 +66,12 @@ async def voice_command_handler(msg: types.Message):
         )
 
         voice_text = response.choices[0].message.content
-        voice_path = generate_voice(voice_text)
+        voice_file = generate_voice(voice_text)
 
-        if voice_path:
+        if voice_file:
             await bot.send_chat_action(msg.chat.id, action="record_voice")
             await asyncio.sleep(min(max(len(voice_text) * 0.05, 1.5), 5))
-            await bot.send_voice(msg.chat.id, voice=types.FSInputFile(voice_path), caption=voice_text)
-            os.remove(voice_path)
+            await bot.send_voice(msg.chat.id, voice=voice_file, caption=voice_text)
         else:
             await msg.answer("Ava tried to speak but something went wrong 🥺")
 
