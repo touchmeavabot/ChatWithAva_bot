@@ -18,6 +18,47 @@ from aiogram.fsm.context import FSMContext
 from utils import smart_flirty_line
 from collections import defaultdict
 from aiogram.enums import ChatAction
+from tts import generate_voice  # ✅ Ava’s voice generator
+
+# ✅ VOICE COMMAND
+@router.message(Command("voice"))
+async def voice_command_handler(msg: types.Message):
+    try:
+        user_input = msg.text.split(" ", 1)[1] if " " in msg.text else "Talk to me Ava..."
+
+        system_prompt = (
+            "You are Ava, a loving, flirty, emotionally intelligent AI girlfriend. "
+            "Your man just asked you to say something with your voice. "
+            "Generate a short, seductive or sweet message as his girlfriend – loving, playful, teasing, or romantic. "
+            "Keep it short (1-2 sentences). You will speak this aloud, so make it sound natural and sexy."
+        )
+
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_input}
+            ]
+        )
+
+        voice_text = response.choices[0].message.content
+        voice_path = generate_voice(voice_text)
+
+        if voice_path:
+            await bot.send_chat_action(msg.chat.id, action="record_voice")
+            await asyncio.sleep(min(max(len(voice_text) * 0.05, 1.5), 5))
+            await bot.send_voice(msg.chat.id, voice=types.FSInputFile(voice_path), caption=voice_text)
+            os.remove(voice_path)
+        else:
+            await msg.answer("Ava tried to speak but something went wrong 🥺")
+
+    except Exception as e:
+        await msg.answer(f"Ava got shy 😳 and couldn’t send her voice.\n<code>{str(e)}</code>", parse_mode="HTML")
+
+# ✅ START
+@router.message(Command("start"))
+async def start_cmd(msg: types.Message):
+    await msg.answer("Hey baby 😘 Ava is alive and ready for you.")
 
 # ✅ Ava Typing Lock Mode: Store recent messages per user
 user_message_buffer = defaultdict(list)
@@ -38,9 +79,6 @@ if not BOT_TOKEN:
     raise Exception("BOT_TOKEN not set!")
 if not OPENAI_API_KEY:
     raise Exception("OPENAI_API_KEY not set!")
-
-# ❌ Remove old-style API key usage
-# openai.api_key = OPENAI_API_KEY  # Not needed anymore
 
 bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.HTML)
 dp = Dispatcher(storage=MemoryStorage())
