@@ -2,17 +2,17 @@ import asyncpg
 import datetime
 import os
 
-DB_URL = os.getenv("DATABASE_URL")  # Use Railway env var
-
 REFILL_AMOUNT = 100
-REFILL_INTERVAL = 12 * 60 * 60  # 12 hours in seconds
+REFILL_INTERVAL = 12 * 60 * 60  # 12 hours
 
 class CreditManager:
     def __init__(self):
         self.pool = None
 
     async def connect(self):
-        self.pool = await asyncpg.create_pool(dsn=DB_URL)
+        db_url = os.getenv("DATABASE_URL")
+        print("🔌 Connecting to:", db_url)  # Debug line
+        self.pool = await asyncpg.create_pool(dsn=db_url)
 
     async def get_credits(self, user_id: int) -> int:
         async with self.pool.acquire() as conn:
@@ -33,7 +33,10 @@ class CreditManager:
             if exists:
                 await conn.execute("UPDATE user_credits SET credits = credits + $1 WHERE user_id = $2", amount, user_id)
             else:
-                await conn.execute("INSERT INTO user_credits (user_id, credits, last_refill) VALUES ($1, $2, $3)", user_id, amount, datetime.datetime.utcnow())
+                await conn.execute(
+                    "INSERT INTO user_credits (user_id, credits, last_refill) VALUES ($1, $2, $3)",
+                    user_id, amount, datetime.datetime.utcnow()
+                )
 
     async def refill_if_due(self, user_id: int):
         async with self.pool.acquire() as conn:
@@ -44,9 +47,11 @@ class CreditManager:
 
             credits, last_refill = row["credits"], row["last_refill"]
             if credits > 0:
-                return  # Not eligible for refill
+                return
 
             time_since = (datetime.datetime.utcnow() - last_refill).total_seconds()
             if time_since >= REFILL_INTERVAL:
-                await conn.execute("UPDATE user_credits SET credits = $1, last_refill = $2 WHERE user_id = $3",
-                                   REFILL_AMOUNT, datetime.datetime.utcnow(), user_id)
+                await conn.execute(
+                    "UPDATE user_credits SET credits = $1, last_refill = $2 WHERE user_id = $3",
+                    REFILL_AMOUNT, datetime.datetime.utcnow(), user_id
+                )
