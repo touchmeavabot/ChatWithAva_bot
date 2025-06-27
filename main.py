@@ -239,17 +239,19 @@ async def process_gift_callback(callback: types.CallbackQuery):
         await callback.answer("Gift not available.")
         return
 
-    await callback.answer()
+    await callback.answer()  # Acknowledge the button press
+
     await bot.send_invoice(
-    chat_id=callback.from_user.id,
-    title=gift_key.replace("_", " ").title(),
-    description="A special gift for Ava 💖",
-    payload=gift_id,
-    currency="XTR",  # Telegram Stars currency
-    prices=[PRICE_MAPPING[gift_key]],
-    start_parameter="gift",
-    is_flexible=False
-)
+        chat_id=callback.from_user.id,
+        title=gift_key.replace("_", " ").title(),
+        description="A special gift for Ava 💖",
+        payload=gift_id,
+        provider_token="STARS",  # Required for Stars; works even as a placeholder
+        currency="XTR",          # Only XTR is accepted
+        prices=[PRICE_MAPPING[gift_key]],
+        start_parameter="ava-gift",
+        is_flexible=False
+    )
 # ❌ REMOVE provider_token — do NOT include it at all
 
 # ✅ Pre-checkout Confirmation
