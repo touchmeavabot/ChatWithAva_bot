@@ -102,7 +102,7 @@ async def unlock_nude_callback(callback: CallbackQuery):
     # ✅ Step 1: Try to update the caption of the same teaser image
     try:
         await callback.message.edit_caption(
-            caption="🔓 Opening the photo… wait a sec 😘",
+            caption="Opening the photo… wait a sec 😘",
             reply_markup=None  # Remove the unlock button
         )
         await asyncio.sleep(0.8)  # Needed so Telegram registers the edit
