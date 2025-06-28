@@ -29,7 +29,7 @@ GIFTS = [
 def get_credit_gift_keyboard():
     buttons = [
         InlineKeyboardButton(
-            text=f"{gift['emoji']} {gift['name']} – {gift['credits']} credits",
+            text=f"{gift['emoji']} for ⭐{gift['credits']}",
             callback_data=f"gift_credit_{gift['name'].lower().replace(' ', '_')}_{gift['credits']}"
         )
         for gift in GIFTS
@@ -40,6 +40,6 @@ def get_credit_gift_keyboard():
 @credit_gift_router.message(Command("gift"))
 async def send_credit_gift_menu(message: types.Message):
     await message.answer(
-        "🎁 Send me a gift using your credits:\n\nChoose one below 💕",
+        "🤖 Pick a gift to make my day! 💌",
         reply_markup=get_credit_gift_keyboard()
     )
