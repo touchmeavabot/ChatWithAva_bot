@@ -146,7 +146,7 @@ async def process_credit_gift(callback: types.CallbackQuery, bot: Bot):
         await callback.message.answer(f"⚠️ Error while processing gift: {e}")
 
 # ✅ Step 1: /pic command shows teaser
-@router.message(Command("pic"))
+@dp.message(Command("pic"))
 async def nsfw_paid_handler(msg: types.Message):
     user_id = msg.from_user.id
 
