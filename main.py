@@ -1,5 +1,6 @@
 import os
 import openai
+from openai import AsyncOpenAI
 import asyncio
 import traceback
 import datetime
