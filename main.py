@@ -234,11 +234,10 @@ async def health():
 async def nsfw_test_handler(msg: types.Message):
     await msg.answer("Ava is painting something naughty for you… 🎨🔥")
 
-    # 👩 Ava's fixed sexy-safe look
+    # 👩 Ava's fixed sexy-safe look (optimized to avoid API errors)
     base_ava_prompt = (
-        "24-year-old seductive woman named Ava, long silky brown hair, soft green eyes, smooth flawless skin, "
-        "fit slim waist, juicy curves, large natural perky breasts, soft pink lips, teasing smile, "
-        "in pink lacy lingerie, bedroom lighting, erotic, suggestive pose, ultra detailed, photorealistic, 4K"
+        "seductive young woman named Ava, brown hair, green eyes, smooth skin, curvy body, large breasts, "
+        "soft lips, sexy lingerie, photorealistic, erotic pose, ultra detailed, soft lighting, 4K"
     )
 
     # 🧠 Grab extra text from user if any (e.g. '/nude show me your boobs')
@@ -258,7 +257,6 @@ async def nsfw_test_handler(msg: types.Message):
         tb = traceback.format_exc()
         safe_tb = tb.replace("<", "&lt;").replace(">", "&gt;")
         await msg.answer(f"Ava messed up while painting 😢\n<code>{safe_tb}</code>", parse_mode="HTML")
-
 # ✅ Ava Reminder Loop (Step 3)
 async def reminder_loop():
     while True:
