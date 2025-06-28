@@ -229,26 +229,48 @@ app = FastAPI()
 async def health():
     return {"message": "TouchMeAva is online 🥰"}
 
+from aiogram import types
+from aiogram.filters import Command
+from app.promptchan_ai import generate_nsfw_image
+from app.routers import router
+
+# 🚫 Blocked words and safe replacements
+BLOCKED_WORDS = {
+    "baby": "honey",
+    "teen": "young adult",
+    "girl": "woman",
+    "school": "private room",
+    "daddy": "lover",
+    "child": "",  # remove
+    "little": "",
+    "daughter": "",  # remove
+}
+
+def clean_prompt(text: str) -> str:
+    for word, replacement in BLOCKED_WORDS.items():
+        text = text.replace(word, replacement)
+    return text.strip()
+
 # ✅ NSFW Image Generator Command using Promptchan
 @router.message(Command("nude"))
 async def nsfw_test_handler(msg: types.Message):
     await msg.answer("Ava is painting something naughty for you… 🎨🔥")
 
-    # 👩 Ava's fixed appearance (always used)
+    # 👩 Ava's fixed sexy-safe look
     base_ava_prompt = (
         "24-year-old seductive woman named Ava, long silky brown hair, soft green eyes, smooth flawless skin, "
         "fit slim waist, juicy curves, large natural perky breasts, soft pink lips, teasing smile, "
         "in pink lacy lingerie, bedroom lighting, erotic, suggestive pose, ultra detailed, photorealistic, 4K"
     )
 
-    # 🧠 Get user extra text, if any
-    user_input = msg.text.replace("/nude", "").strip()
+    # 🧠 Get cleaned user request
+    user_input = clean_prompt(msg.text.replace("/nude", "").strip())
 
-    # ✨ Final prompt = Ava's look + user’s request
+    # ✨ Final image prompt
     if user_input:
         final_prompt = f"{base_ava_prompt}, {user_input}"
     else:
-        final_prompt = f"{base_ava_prompt}, erotic pose"
+        final_prompt = base_ava_prompt
 
     try:
         url = await generate_nsfw_image(final_prompt)
