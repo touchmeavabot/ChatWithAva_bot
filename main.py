@@ -34,6 +34,7 @@ from utils import smart_flirty_line
 from credits import CreditManager
 from promptchan_ai import generate_nsfw_image
 from reply_mode_manager import get_reply_mode
+from tg_gift_handler import credit_gift_router
 
 # ✅ Routers
 from stars_gift_handler import stars_router
