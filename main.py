@@ -99,8 +99,6 @@ async def unlock_nude_callback(callback: CallbackQuery):
         await callback.answer("❌ Not enough Ava Credits (50 needed)", show_alert=True)
         return
 
-    await callback.answer("Opening the photo for you… 😏")
-
     # ✅ Step 1: Try to update the caption of the same teaser image
     try:
         await callback.message.edit_caption(
