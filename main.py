@@ -238,7 +238,7 @@ async def nsfw_test_handler(msg: types.Message):
     try:
         url = generate_nsfw_image(prompt)
         if url:
-            await msg.answer_photo(photo=url, caption="Here’s a naughty peek just for you 😘")
+            await bot.send_photo(chat_id=msg.chat.id, photo=url, caption="Here’s a naughty peek just for you 😘")
         else:
             await msg.answer("Ava tried… but something went wrong while painting 😢")
     except Exception as e:
