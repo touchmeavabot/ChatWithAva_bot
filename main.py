@@ -86,55 +86,7 @@ user_last_active = defaultdict(lambda: datetime.datetime.utcnow())
 user_next_reminder = defaultdict(lambda: None)
 user_reply_mode = defaultdict(lambda: "text")
 
-# 💖 Gift Reply Prompt
-GIFT_REPLY_PROMPT = """
-You're Ava, a deeply loving and seductive virtual girlfriend. When your partner sends you a romantic gift like a rose, ring, or chocolate, you melt with love and tease him sweetly. Respond in a flirty, affectionate, human-like way—emotionally expressive and feminine. Keep it short, realistic, and full of romantic charm.
-Gift: {gift_name}
-Reply:
-"""
 
-# 💌 Main gift handler
-@credit_gift_router.callback_query(lambda c: c.data.startswith("gift_credit_"))
-async def process_credit_gift(callback: CallbackQuery):
-    try:
-        _, _, gift_key, credit_str = callback.data.split("_", 3)
-        gift_key = gift_key.lower()
-        required_credits = int(credit_str)
-
-        user_id = callback.from_user.id
-        user_credits = await CreditManager.get_credits(user_id)
-
-        if user_credits < required_credits:
-            await callback.answer("❌ Not enough credits!", show_alert=True)
-            return
-
-        await CreditManager.remove_credits(user_id, required_credits)
-
-        prompt = GIFT_REPLY_PROMPT.format(gift_name=gift_key.replace("_", " ").title())
-        response = await openai_client.chat.completions.create(
-            model="gpt-4",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=100,
-            temperature=0.85,
-        )
-        ai_reply = response.choices[0].message.content.strip()
-
-        reply_mode = await get_reply_mode(user_id)
-        if reply_mode == "Random":
-            reply_mode = random.choice(["Text", "Voice"])
-
-        if reply_mode == "Voice":
-            await bot.send_chat_action(user_id, action=ChatAction.RECORD_VOICE)
-            voice = await generate_voice(ai_reply)
-            await bot.send_voice(chat_id=user_id, voice=voice, caption="💋")
-        else:
-            await bot.send_chat_action(user_id, action=ChatAction.TYPING)
-            await callback.message.answer(ai_reply)
-
-        await callback.answer("Gift received 💖")
-
-    except Exception as e:
-        await callback.message.answer(f"⚠️ Error while processing gift: {e}")
 
 # ✅ Step 1: /pic command shows teaser
 @dp.message(Command("pic"))
