@@ -34,27 +34,30 @@ async def generate_nsfw_image(prompt: str) -> str:
             data = await response.json()
             job_id = data["id"]
 
-        # Step 2: Poll for job completion
-        while True:
-            async with session.get(
-                f"https://api.runpod.ai/v2/{RUNPOD_ENDPOINT_ID}/status/{job_id}",
-                headers=headers
-            ) as poll_response:
-                poll_data = await poll_response.json()
+        # Poll job
+while True:
+    async with session.get(
+        f"https://api.runpod.ai/v2/{RUNPOD_ENDPOINT_ID}/status/{job_id}",
+        headers=headers
+    ) as poll_response:
+        poll_data = await poll_response.json()
 
-                if poll_data["status"] == "COMPLETED":
-                    output = poll_data["output"]
-                    # Handle both dict and direct string outputs
-                    if isinstance(output, dict) and "image_url" in output:
-                        return output["image_url"]
-                    elif isinstance(output, dict) and "images" in output:
-                        return output["images"][0]  # fallback
-                    elif isinstance(output, str):
-                        return output
-                    else:
-                        raise Exception("Unexpected output format from RunPod")
+        # Debug print the whole response to understand structure
+        print("RunPod Poll Response:", poll_data)
 
-                elif poll_data["status"] == "FAILED":
-                    raise Exception("RunPod generation failed")
+        if poll_data["status"] == "COMPLETED":
+            # Just try to return the first found image URL
+            output = poll_data.get("output")
+            if isinstance(output, dict):
+                return output.get("image_url") or output.get("images", [None])[0]
+            elif isinstance(output, list):
+                return output[0]
+            elif isinstance(output, str):
+                return output
+            else:
+                raise Exception("Unexpected output format: " + str(output))
 
-            await asyncio.sleep(3)
+        elif poll_data["status"] == "FAILED":
+            raise Exception("RunPod generation failed")
+
+    await asyncio.sleep(3)
