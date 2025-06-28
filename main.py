@@ -409,31 +409,34 @@ async def gift_command(msg: types.Message):
         reply_markup=keyboard
     )
 
-# ✅ CALLBACK → INVOICE
+# ✅ CALLBACK → INVOICE (FIXED)
 @router.callback_query(lambda c: c.data.startswith("gift_"))
 async def process_gift_callback(callback: types.CallbackQuery):
-    # 🔄 Flexible splitting to support multi-word gift keys
-    parts = callback.data.split("_")
-    price = parts[-1]
-    gift_key = "_".join(parts[1:-1])
-    gift_id = f"{gift_key}_{price}"
+    try:
+        # Full callback_data is like: gift_heart_ring_2500
+        data = callback.data[len("gift_"):]  # Remove 'gift_' prefix
+        *gift_parts, price = data.split("_")
+        gift_key = "_".join(gift_parts)  # Recombine key like 'heart_ring'
 
-    if gift_key not in PRICE_MAPPING:
-        await callback.answer("❌ Gift not available.", show_alert=True)
-        return
+        if gift_key not in PRICE_MAPPING:
+            await callback.answer("Gift not available.")
+            return
 
-    await callback.answer()
-    await bot.send_invoice(
-        chat_id=callback.from_user.id,
-        title=gift_key.replace("_", " ").title(),
-        description="A special gift for Ava 💖",
-        payload=gift_id,
-        provider_token="STARS",
-        currency="XTR",
-        prices=[PRICE_MAPPING[gift_key]],
-        start_parameter="gift",
-        is_flexible=False
-    )
+        await callback.answer()
+
+        await bot.send_invoice(
+            chat_id=callback.from_user.id,
+            title=gift_key.replace("_", " ").title(),
+            description="A special gift for Ava 💖",
+            payload=gift_key,
+            provider_token="STARS",
+            currency="XTR",
+            prices=[PRICE_MAPPING[gift_key]],
+            start_parameter="gift",
+            is_flexible=False
+        )
+    except Exception as e:
+        await callback.message.answer(f"⚠️ Ava got confused: {e}")
 
 # ✅ PAYMENT CONFIRMATION
 @router.pre_checkout_query()
