@@ -412,11 +412,14 @@ async def gift_command(msg: types.Message):
 # ✅ CALLBACK → INVOICE
 @router.callback_query(lambda c: c.data.startswith("gift_"))
 async def process_gift_callback(callback: types.CallbackQuery):
-    _, gift_key, price = callback.data.split("_", 2)
+    # 🔄 Flexible splitting to support multi-word gift keys
+    parts = callback.data.split("_")
+    price = parts[-1]
+    gift_key = "_".join(parts[1:-1])
     gift_id = f"{gift_key}_{price}"
 
     if gift_key not in PRICE_MAPPING:
-        await callback.answer("Gift not available.")
+        await callback.answer("❌ Gift not available.", show_alert=True)
         return
 
     await callback.answer()
