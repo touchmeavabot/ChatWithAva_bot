@@ -3,7 +3,7 @@ import datetime
 import os
 
 REFILL_AMOUNT = 100
-REFILL_INTERVAL = 12 * 60 * 60  # 12 hours
+REFILL_INTERVAL = 12 * 60 * 60  # 12 hours (in seconds)
 
 class CreditManager:
     def __init__(self):
@@ -11,7 +11,7 @@ class CreditManager:
 
     async def connect(self):
         db_url = os.getenv("DATABASE_URL")
-        print("🔌 Connecting to:", db_url)  # Debug log
+        print("🔌 Connecting to:", db_url)
         if not db_url:
             raise ValueError("❌ DATABASE_URL is not set in environment!")
         self.pool = await asyncpg.create_pool(dsn=db_url)
@@ -20,16 +20,6 @@ class CreditManager:
         async with self.pool.acquire() as conn:
             row = await conn.fetchrow("SELECT credits FROM user_credits WHERE user_id = $1", user_id)
             return row["credits"] if row else 0
-
-    async def charge_credits(self, user_id: int, amount: int) -> bool:
-        credits = await self.get_credits(user_id)
-        if credits < amount:
-            return False
-        async with self.pool.acquire() as conn:
-            await conn.execute(
-                "UPDATE user_credits SET credits = credits - $1 WHERE user_id = $2", amount, user_id
-            )
-        return True
 
     async def add_credits(self, user_id: int, amount: int):
         async with self.pool.acquire() as conn:
@@ -45,6 +35,24 @@ class CreditManager:
                     "INSERT INTO user_credits (user_id, credits, last_refill) VALUES ($1, $2, $3)",
                     user_id, amount, datetime.datetime.utcnow()
                 )
+
+    async def charge_credits(self, user_id: int, amount: int) -> bool:
+        credits = await self.get_credits(user_id)
+        if credits < amount:
+            return False
+        async with self.pool.acquire() as conn:
+            await conn.execute(
+                "UPDATE user_credits SET credits = credits - $1 WHERE user_id = $2", amount, user_id
+            )
+        return True
+
+    async def deduct_credits(self, user_id: int, amount: int):
+        async with self.pool.acquire() as conn:
+            await conn.execute(
+                "UPDATE user_credits SET credits = credits - $1 WHERE user_id = $2 AND credits >= $1",
+                amount,
+                user_id
+            )
 
     async def refill_if_due(self, user_id: int):
         async with self.pool.acquire() as conn:
