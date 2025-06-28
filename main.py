@@ -1,29 +1,40 @@
 import os
 import openai
-from tts import generate_voice
+import asyncio
 import traceback
 import datetime
-import asyncio
+from collections import defaultdict
+
+# ✅ FastAPI
 from fastapi import FastAPI, Request
-from aiogram import Bot, Dispatcher, types, F, Router  # ✅ FIXED HERE
+
+# ✅ Aiogram Core
+from aiogram import Bot, Dispatcher, types, F, Router
 from aiogram.enums import ParseMode, ChatAction
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.filters import Command
+from aiogram.fsm.context import FSMContext
+
+# ✅ Aiogram Types
 from aiogram.types import (
+    Message,
     Update,
+    CallbackQuery,
     LabeledPrice,
     PreCheckoutQuery,
     InlineKeyboardMarkup,
     InlineKeyboardButton,
-    CallbackQuery,
 )
-from aiogram.fsm.context import FSMContext
-from collections import defaultdict
+
+# ✅ Custom Modules
+from tts import generate_voice
 from utils import smart_flirty_line
 from credits import CreditManager
 from promptchan_ai import generate_nsfw_image
+
+# ✅ Routers
 from stars_gift_handler import stars_router
-from aiogram.types import Message
+from tg_gift_handler import credit_gift_router  # ✅ NEW CREDIT GIFT SYSTEM
 
 # 🚫 Blocked words and safe replacements
 BLOCKED_WORDS = {
