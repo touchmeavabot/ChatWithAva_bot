@@ -387,19 +387,19 @@ gifts = [
     {"emoji": "💄", "name": "Lipstick", "price": 1500},
     {"emoji": "💐", "name": "Bouquet", "price": 500},
     {"emoji": "🌹", "name": "Rose", "price": 250},
-    {"emoji": "🍫", "name": "Chocolate", "price": 2},
+    {"emoji": "🍫", "name": "Chocolate", "price": 10},
 ]
 
-# ✅ Price mapping for Telegram Stars payment
+# ✅ Telegram pricing
 PRICE_MAPPING = {
     "heart_ring": LabeledPrice(label="Heart Ring", amount=2500),
     "lipstick": LabeledPrice(label="Lipstick", amount=1500),
     "bouquet": LabeledPrice(label="Bouquet", amount=500),
     "rose": LabeledPrice(label="Rose", amount=250),
-    "chocolate": LabeledPrice(label="Chocolate", amount=2),
+    "chocolate": LabeledPrice(label="Chocolate", amount=10),
 }
 
-# ✅ Create inline keyboard for gifts
+# ✅ Build gift keyboard
 def get_star_gift_keyboard():
     buttons = [
         InlineKeyboardButton(
@@ -410,37 +410,36 @@ def get_star_gift_keyboard():
     ]
     return InlineKeyboardMarkup(inline_keyboard=[buttons[i:i + 2] for i in range(0, len(buttons), 2)])
 
-# ✅ /gift command — must be in stars_router
+# ✅ /gift command
 @stars_router.message(Command("gift"))
 async def send_gift_list(message: Message):
+    print("/gift command triggered")  # Debug
     await message.answer(
         "🎁 Pick a gift to send me with Telegram Stars:\n\n"
         "Tap any gift below and confirm the payment ⭐",
         reply_markup=get_star_gift_keyboard()
     )
 
-# ✅ Callback handler to send invoice
+# ✅ Callback handler
 @stars_router.callback_query(lambda c: c.data.startswith("star_gift_"))
 async def process_star_gift(callback: types.CallbackQuery, bot: Bot):
     try:
-        # ✅ Extract gift key from callback
-        gift_data = callback.data.replace("star_gift_", "")
-        gift_key, _ = gift_data.rsplit("_", 1)
+        print(f"Callback received: {callback.data}")  # Debug
+        data = callback.data.replace("star_gift_", "")
+        gift_key, _ = data.rsplit("_", 1)
 
-        # ✅ Check if gift exists
         if gift_key not in PRICE_MAPPING:
             await callback.answer("❌ This gift is not available right now.")
             return
 
-        await callback.answer()  # Remove loading spinner
+        await callback.answer()
 
-        # ✅ Send invoice
         await bot.send_invoice(
             chat_id=callback.from_user.id,
             title=gift_key.replace("_", " ").title(),
             description=f"A special gift for Ava 💖",
             payload=gift_key,
-            provider_token="STARS",
+            provider_token="STARS",  # ⚠️ Make sure you're in TEST MODE
             currency="XTR",
             prices=[PRICE_MAPPING[gift_key]],
             start_parameter="gift",
@@ -449,7 +448,7 @@ async def process_star_gift(callback: types.CallbackQuery, bot: Bot):
     except Exception as e:
         await callback.message.answer(f"⚠️ Error while processing gift: {e}")
 
-# ✅ Pre-checkout query confirmation (required by Telegram)
+# ✅ Pre-checkout
 @stars_router.pre_checkout_query()
 async def pre_checkout(pre_checkout_q: PreCheckoutQuery, bot: Bot):
     await bot.answer_pre_checkout_query(pre_checkout_q.id, ok=True)
