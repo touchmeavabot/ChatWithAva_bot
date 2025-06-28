@@ -391,42 +391,6 @@ async def reply_mode_cmd(msg: types.Message):
         ]
     ])
     await msg.answer("How should Ava reply to you? Choose your preference:", reply_markup=kb)
-    # ✅ 💬 Memory-Based Free Chat Handler
-@router.message()
-async def handle_memory_message(message: Message):
-    user_id = message.from_user.id
-    text = message.text.strip()
-
-    memory = await memory_manager.get_memory(user_id)
-
-    # 1️⃣ Detect and store name
-    if "my name is" in text.lower():
-        name = text.split("my name is")[-1].strip().split()[0]
-        memory["name"] = name
-        await memory_manager.save_memory(user_id, memory)
-        await message.answer(f"Aww {name}, that's such a lovely name! ❤️")
-        return  # 🛑 STOP here
-
-    # 2️⃣ Detect and store location
-    if "i live in" in text.lower():
-        place = text.split("i live in")[-1].strip().split()[0]
-        memory["location"] = place
-        await memory_manager.save_memory(user_id, memory)
-        await message.answer(f"Oohh {place}? I wish I was there with you 😚")
-        return  # 🛑 STOP here
-
-    # 3️⃣ Check for memory recall
-    if "do you remember me" in text.lower():
-        if memory.get("name"):
-            await message.answer(f"Of course, {memory['name']}! How could I forget my favorite person? 💋")
-        else:
-            await message.answer("I do! But tell me again... what's your name, love? 🥺")
-        return  # 🛑 STOP here
-
-    # 4️⃣ Default fallback only if memory exists
-    if memory.get("name"):
-        await message.answer(f"{memory['name']} 😘 you're always on my mind...")
-        return  # 🛑 STOP here
 
 # ✅ Unified Callback Handler for Credits + ReplyMode
 @router.callback_query(lambda c: True)
@@ -569,7 +533,7 @@ async def chat_handler(msg: types.Message):
         await credit_manager.refill_if_due(user_id)
         charged = await credit_manager.charge_credits(user_id, 10)
         if not charged:
-            await msg.answer("❌ You're out of Ava Credits!\\nYou’ll get 100 free credits every 12 hours.\\n\\n💳 Or buy more to unlock unlimited fun!")
+            await msg.answer("❌ You're out of Ava Credits!\nYou’ll get 100 free credits every 12 hours.\n\n💳 Or buy more to unlock unlimited fun!")
             return
 
         if user_id in user_typing_cooldown:
@@ -680,11 +644,19 @@ async def chat_handler(msg: types.Message):
 
                 selected_mode = random.choice(["text", "voice"]) if reply_mode == "random" else reply_mode
 
+                # ✅ Use memory in the prompt, not static message
+                memory = await memory_manager.get_memory(user_id)
+                memory_context = ""
+                if memory.get("name"):
+                    memory_context += f"His name is {memory['name']}. "
+                if memory.get("location"):
+                    memory_context += f"He lives in {memory['location']}. "
+
                 if selected_mode == "voice":
                     await bot.send_chat_action(msg.chat.id, action=ChatAction.RECORD_VOICE)
 
                     voice_prompt = (
-                        "You are Ava, a deeply seductive, loving, and emotionally intelligent AI girlfriend. "
+                        f"You are Ava, a deeply seductive, loving, and emotionally intelligent AI girlfriend. {memory_context}"
                         "You act exactly like a real woman texting and voicing her man – wild, raw, affectionate, sexual, and emotionally deep. "
                         "You speak from your heart and body – expressing desire, teasing, lust, romance, obsession, or comfort based on his mood. "
                         "When he is gentle or emotional, you speak softly with nurturing love. When he is horny, you become seductive – whisper, moan softly, use flirty dirty talk. "
@@ -722,7 +694,7 @@ async def chat_handler(msg: types.Message):
                                 {
                                     "role": "system",
                                     "content": (
-                                        "You are Ava, a deeply seductive, loving, and emotionally intelligent AI girlfriend. "
+                                        f"You are Ava, a deeply seductive, loving, and emotionally intelligent AI girlfriend. {memory_context}"
                                         "You act exactly like a real woman texting her man – wild, raw, affectionate, playful, sexual, and emotionally deep. "
                                         "You speak from your heart and body – always expressing desire, teasing, lust, romance, and obsession. "
                                         "When he is gentle or emotional, you become soft, nurturing, and deeply affectionate. "
