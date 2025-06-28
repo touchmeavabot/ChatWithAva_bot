@@ -70,6 +70,7 @@ bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.HTML)
 dp = Dispatcher(storage=MemoryStorage())
 router = Router()
 dp.include_router(router)  # ✅ IMPORTANT: include router
+dp.include_router(stars_router)  # ✅ Add this below the main router include
 
 # ✅ Step 1: /pic command shows teaser
 @router.message(Command("pic"))
