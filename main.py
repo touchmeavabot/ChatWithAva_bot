@@ -118,9 +118,11 @@ async def unlock_nude_callback(callback: CallbackQuery):
 
     # ✅ Step 3: Generate image
     base_prompt = (
-        "24-year-old seductive woman named Ava, long silky brown hair, soft green eyes, smooth flawless skin, "
-        "fit slim waist, juicy curves, large natural perky breasts, soft pink lips, teasing smile, "
-        "in pink lacy lingerie, bedroom lighting, erotic, suggestive pose, ultra detailed, photorealistic, 4K"
+        "A breathtakingly seductive 24-year-old woman named Ava, glowing soft flawless skin, luminous green eyes, "
+    "glossy pink lips, long silky golden-blonde hair, dreamy gaze, perfect makeup, "
+    "natural large round breasts, perky nipples peeking through sheer pink lace bra, "
+    "tight slim waist, delicate collarbones, soft erotic pose, teasing smile, "
+    "dim bedroom lighting with warm highlights, cinematic portrait, ultra detailed, photorealistic, DSLR quality, 8K"
     )
     user_input = user_nude_prompt.get(user_id, "")
     final_prompt = f"{base_prompt}, {user_input}" if user_input else base_prompt
