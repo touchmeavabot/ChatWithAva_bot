@@ -1,11 +1,11 @@
 import os
-import requests
-import time
+import aiohttp
+import asyncio
 
 RUNPOD_API_KEY = os.getenv("RUNPOD_API_KEY")
-RUNPOD_ENDPOINT_ID = os.getenv("RUNPOD_ENDPOINT_ID")  # You can hardcode if you want
+RUNPOD_ENDPOINT_ID = os.getenv("RUNPOD_ENDPOINT_ID")
 
-def generate_nsfw_image(prompt: str) -> str:
+async def generate_nsfw_image(prompt: str) -> str:
     headers = {
         "Authorization": f"Bearer {RUNPOD_API_KEY}"
     }
@@ -21,24 +21,27 @@ def generate_nsfw_image(prompt: str) -> str:
         }
     }
 
-    response = requests.post(
-        f"https://api.runpod.ai/v2/{RUNPOD_ENDPOINT_ID}/run",
-        headers=headers,
-        json=payload
-    )
-    response.raise_for_status()
-    job_id = response.json()["id"]
+    async with aiohttp.ClientSession() as session:
+        # Step 1: Start job
+        async with session.post(
+            f"https://api.runpod.ai/v2/{RUNPOD_ENDPOINT_ID}/run",
+            headers=headers,
+            json=payload
+        ) as response:
+            if response.status != 200:
+                raise Exception("RunPod start failed")
+            data = await response.json()
+            job_id = data["id"]
 
-    # Polling
-    while True:
-        poll = requests.get(
-            f"https://api.runpod.ai/v2/{RUNPOD_ENDPOINT_ID}/status/{job_id}",
-            headers=headers
-        ).json()
-
-        if poll["status"] == "COMPLETED":
-            return poll["output"]["image_url"]
-        elif poll["status"] == "FAILED":
-            raise Exception("RunPod generation failed.")
-
-        time.sleep(3)
+        # Step 2: Poll job status
+        while True:
+            async with session.get(
+                f"https://api.runpod.ai/v2/{RUNPOD_ENDPOINT_ID}/status/{job_id}",
+                headers=headers
+            ) as poll_response:
+                poll_data = await poll_response.json()
+                if poll_data["status"] == "COMPLETED":
+                    return poll_data["output"]["image_url"]
+                elif poll_data["status"] == "FAILED":
+                    raise Exception("RunPod generation failed")
+            await asyncio.sleep(3)
