@@ -14,7 +14,7 @@ async def generate_nsfw_image(prompt: str) -> str:
     payload = {
         "prompt": prompt,
         "negativePrompt": "ugly, blurry, distorted, watermark",
-        "model": "realistic",  # Or try 'hentai', 'anime', etc. if allowed
+        "model": "realistic",  # You can try: 'realistic', 'hentai', 'anime', etc.
         "width": 768,
         "height": 1024,
         "scheduler": "DPM++ 2M Karras",
@@ -31,8 +31,10 @@ async def generate_nsfw_image(prompt: str) -> str:
             if resp.status != 200:
                 raise Exception(f"Promptchan API failed. Status: {resp.status}")
             data = await resp.json()
+
+            # ✅ Corrected here — use 'image' key directly
             try:
-                image_url = data["data"][0]["url"]
+                image_url = data["image"]
                 return image_url
-            except (KeyError, IndexError):
-                raise Exception(f"⚠️ Invalid response from Promptchan: {data}")
+            except KeyError:
+                raise Exception(f"⚠️ Unexpected response format from Promptchan:\n{data}")
