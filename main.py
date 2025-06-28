@@ -409,26 +409,27 @@ async def gift_command(msg: types.Message):
         reply_markup=keyboard
     )
 
-# ✅ CALLBACK → INVOICE (FIXED)
+# ✅ CALLBACK → INVOICE (FIXED gift_key extraction)
 @router.callback_query(lambda c: c.data.startswith("gift_"))
 async def process_gift_callback(callback: types.CallbackQuery):
+    await callback.answer()  # Remove loading spinner immediately
+
     try:
-        # Full callback_data is like: gift_heart_ring_2500
-        data = callback.data[len("gift_"):]  # Remove 'gift_' prefix
-        *gift_parts, price = data.split("_")
-        gift_key = "_".join(gift_parts)  # Recombine key like 'heart_ring'
+        # Extract actual gift key and price (robust)
+        data = callback.data.replace("gift_", "")
+        parts = data.rsplit("_", 1)  # split from the right
+        gift_key = parts[0]
+        price = int(parts[1])  # just for confirmation
 
         if gift_key not in PRICE_MAPPING:
-            await callback.answer("Gift not available.")
+            await callback.message.answer("❌ Gift not available.")
             return
-
-        await callback.answer()
 
         await bot.send_invoice(
             chat_id=callback.from_user.id,
             title=gift_key.replace("_", " ").title(),
             description="A special gift for Ava 💖",
-            payload=gift_key,
+            payload=gift_key,  # this will be received in successful_payment.payload
             provider_token="STARS",
             currency="XTR",
             prices=[PRICE_MAPPING[gift_key]],
@@ -436,7 +437,7 @@ async def process_gift_callback(callback: types.CallbackQuery):
             is_flexible=False
         )
     except Exception as e:
-        await callback.message.answer(f"⚠️ Ava got confused: {e}")
+        await callback.message.answer(f"⚠️ Error: {e}")
 
 # ✅ PAYMENT CONFIRMATION
 @router.pre_checkout_query()
