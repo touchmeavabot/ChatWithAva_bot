@@ -13,16 +13,17 @@ async def generate_nsfw_image(prompt: str) -> str:
     payload = {
         "input": {
             "prompt": prompt,
-            "negative_prompt": "ugly, blurry, watermark",
-            "width": 512,
-            "height": 768,
+            "num_inference_steps": 30,
             "guidance_scale": 7.5,
-            "num_inference_steps": 30
+            "scheduler": "DPMSolverMultistepScheduler",  # Required for this model
+            "width": 1024,
+            "height": 1024,
+            "prompt_strength": 0.8
         }
     }
 
     async with aiohttp.ClientSession() as session:
-        # Step 1: Start job
+        # Start job
         async with session.post(
             f"https://api.runpod.ai/v2/{RUNPOD_ENDPOINT_ID}/run",
             headers=headers,
@@ -33,7 +34,7 @@ async def generate_nsfw_image(prompt: str) -> str:
             data = await response.json()
             job_id = data["id"]
 
-        # Step 2: Poll job status
+        # Poll job
         while True:
             async with session.get(
                 f"https://api.runpod.ai/v2/{RUNPOD_ENDPOINT_ID}/status/{job_id}",
