@@ -407,7 +407,7 @@ def get_star_gift_keyboard():
     return InlineKeyboardMarkup(inline_keyboard=[buttons[i:i + 2] for i in range(0, len(buttons), 2)])
 
 # ✅ /gift command
-@stars_router.message(Command("gift"))
+@router.message(Command("gift"))  # ✅ Use your main router
 async def send_gift_list(message: Message):
     await message.answer(
         "🎁 Pick a gift to send me with Telegram Stars:\n\n"
