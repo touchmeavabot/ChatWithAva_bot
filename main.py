@@ -22,7 +22,7 @@ from aiogram.fsm.context import FSMContext
 from collections import defaultdict
 from utils import smart_flirty_line
 from credits import CreditManager
-from runpod_ai import generate_nsfw_image
+from promptchan_ai import generate_nsfw_image
 
 # ✅ Ava Typing Lock Mode
 user_message_buffer = defaultdict(list)
