@@ -236,7 +236,7 @@ async def nsfw_test_handler(msg: types.Message):
 
     prompt = "beautiful nude woman, seductive eyes, bedroom lighting, photorealistic, soft skin, high detail"
     try:
-        url = await generate_nsfw_image(prompt)
+        url = generate_nsfw_image(prompt)
         if url:
             await msg.answer_photo(photo=url, caption="Here’s a naughty peek just for you 😘")
         else:
