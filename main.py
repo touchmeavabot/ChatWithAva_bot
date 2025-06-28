@@ -141,7 +141,10 @@ async def gift_command(msg: Message):
 @router.callback_query(lambda c: c.data.startswith("gift_credit_"))
 async def handle_star_gift_invoice(callback: CallbackQuery):
     try:
-        gift_key = callback.data.replace("gift_credit_", "")
+        data = callback.data.replace("gift_credit_", "")
+
+        # Handle case like: rose_250
+        gift_key = data.split("_")[0]  # only 'rose'
         gift = STAR_GIFTS.get(gift_key)
 
         if not gift:
@@ -163,7 +166,6 @@ async def handle_star_gift_invoice(callback: CallbackQuery):
 
     except Exception as e:
         await callback.message.answer(f"⚠️ Error creating invoice: {e}")
-
 # ✅ Confirm Payment
 @router.pre_checkout_query()
 async def handle_pre_checkout(pre_checkout_q: PreCheckoutQuery, bot: Bot):
