@@ -110,7 +110,7 @@ STAR_GIFTS = {
     "kiss": {"emoji": "💋", "name": "Kiss", "price": 350},
     "flowers": {"emoji": "🌺", "name": "Flowers", "price": 350},
     "rose": {"emoji": "🌹", "name": "Rose", "price": 250},
-    "candy": {"emoji": "🍬", "name": "Candy", "price": 250},
+    "candy": {"emoji": "🍬", "name": "Candy", "price": 2},
 }
 
 # 🎁 Gift Buttons
