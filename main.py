@@ -98,17 +98,19 @@ async def unlock_nude_callback(callback: CallbackQuery):
         await callback.answer("❌ Not enough Ava Credits (50 needed)", show_alert=True)
         return
 
+    await callback.answer("Opening the photo for you… 😏")
+
     try:
-        # Edit the blurred image caption first
+        # ✅ Step 1: Edit the existing blurred photo’s caption
         await callback.message.edit_caption("🔓 Opening the photo… wait a sec 😘")
-        await asyncio.sleep(0.8)
+
+        # ✅ Step 2: Wait just enough for Telegram to render the caption
+        await asyncio.sleep(0.7)
+
+        # ✅ Step 3: Show upload animation
+        await bot.send_chat_action(callback.message.chat.id, action="upload_photo")
     except:
         pass
-
-    # Send fake loading message
-    loading_msg = await callback.message.answer("⏳ Generating your naughty surprise...")
-
-    await bot.send_chat_action(callback.message.chat.id, action="upload_photo")
 
     base_prompt = (
         "24-year-old seductive woman named Ava, long silky brown hair, soft green eyes, smooth flawless skin, "
@@ -121,15 +123,14 @@ async def unlock_nude_callback(callback: CallbackQuery):
     try:
         url = await generate_nsfw_image(final_prompt)
 
+        # ✅ Step 4: Deduct credits
         await credit_manager.add_credits(user_id, -50)
 
-        # Replace the original photo with the real one
+        # ✅ Step 5: Replace the old blurred photo with the new image
         new_media = types.InputMediaPhoto(media=url, caption="Here’s your naughty surprise 😘")
         await callback.message.edit_media(media=new_media)
 
-        # Delete the loading message
-        await loading_msg.delete()
-
+        # ✅ Step 6: Clear prompt
         user_nude_prompt.pop(user_id, None)
 
     except Exception as e:
