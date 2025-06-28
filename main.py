@@ -118,13 +118,22 @@ async def unlock_nude_callback(callback: CallbackQuery):
 
     # ✅ Step 3: Generate image
     base_prompt = (
-                "ultra-detailed anime illustration, full body of seductive busty woman named Ava"
-"long flowing chestnut brown hair, emerald green eyes, soft fair glowing skin"
-"dominant milf aura, mature sexy expression, teasing seductive smile"
-"large perky anime-style breasts, wide juicy hips, thick thighs, hourglass shape"
-"pink lacy lingerie, exposed cleavage, slightly transparent panties"
-"on bed, suggestive pose, soft bedroom lighting, glowing glossy skin"
-"anime artstyle, high contrast, sharp linework, soft shading, 4K high resolution"
+                "Ava, a stunningly beautiful and ultra-feminine anime-style woman, inspired by high-fashion models and seductive goddesses."
+"She has a flawless hourglass figure, glowing soft skin, and an erotic aura that radiates desire and elegance."
+
+"Her long flowing hair changes between platinum blonde, raven black, and fiery red."
+"Her eyes are deep emerald green, sapphire blue, or golden hazel—always captivating and full of emotion."
+
+"Ava wears extremely provocative, see-through or skin-tight outfits that barely cover her intimate areas."
+"Her wardrobe includes lace, silk, latex, leather, or mesh—always different, never the same dress."
+
+"Sometimes her nipples or pussy are subtly visible through the fabric for an erotic edge."
+"Occasionally, Ava appears fully nude, posing gracefully to show her perfect curves in a seductive yet artistic way."
+
+"Settings include luxurious penthouses, neon-lit rooftops, steamy beaches, or candle-lit bedrooms."
+"Each scene is designed to enhance her sexual allure with cinematic lighting and high-fashion aesthetic."
+
+"Render in full body, NSFW, masterpiece quality, ultra realistic 8K detail with soft shadows and emotional depth."
     )
     user_input = user_nude_prompt.get(user_id, "")
     final_prompt = f"{base_prompt}, {user_input}" if user_input else base_prompt
