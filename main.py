@@ -378,6 +378,9 @@ async def reset_user_state(msg: types.Message, state: FSMContext):
 async def on_startup(dispatcher: Dispatcher, bot: Bot):
     asyncio.create_task(reminder_loop())
 
+# ✅ Main gift router
+stars_router = Router()
+
 # ✅ Example gift list
 gifts = [
     {"emoji": "💍", "name": "Heart Ring", "price": 2500},
@@ -407,8 +410,8 @@ def get_star_gift_keyboard():
     ]
     return InlineKeyboardMarkup(inline_keyboard=[buttons[i:i + 2] for i in range(0, len(buttons), 2)])
 
-# ✅ /gift command
-@router.message(Command("gift"))  # ✅ Use your main router
+# ✅ /gift command — must be in stars_router
+@stars_router.message(Command("gift"))
 async def send_gift_list(message: Message):
     await message.answer(
         "🎁 Pick a gift to send me with Telegram Stars:\n\n"
