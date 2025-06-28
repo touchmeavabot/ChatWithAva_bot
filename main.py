@@ -58,6 +58,7 @@ app = FastAPI()
 @app.on_event("startup")
 async def on_startup():
     await credit_manager.connect()
+    await asyncio.sleep(2)
     await bot.set_webhook(WEBHOOK_URL)
 
 # 🔹 Credit Packs
