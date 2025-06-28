@@ -391,46 +391,42 @@ async def reply_mode_cmd(msg: types.Message):
         ]
     ])
     await msg.answer("How should Ava reply to you? Choose your preference:", reply_markup=kb)
-    # 💬 Memory-Based Free Chat Handler
+    # ✅ 💬 Memory-Based Free Chat Handler
 @router.message()
 async def handle_memory_message(message: Message):
     user_id = message.from_user.id
-    text = message.text
+    text = message.text.strip()
 
-    # 1️⃣ Load user memory from database
     memory = await memory_manager.get_memory(user_id)
 
-    # 2️⃣ Detect and store "my name is" input
+    # 1️⃣ Detect and store name
     if "my name is" in text.lower():
         name = text.split("my name is")[-1].strip().split()[0]
         memory["name"] = name
         await memory_manager.save_memory(user_id, memory)
         await message.answer(f"Aww {name}, that's such a lovely name! ❤️")
-        return
+        return  # 🛑 STOP here
 
-    # 3️⃣ Detect and store "i live in" input
+    # 2️⃣ Detect and store location
     if "i live in" in text.lower():
         place = text.split("i live in")[-1].strip().split()[0]
         memory["location"] = place
         await memory_manager.save_memory(user_id, memory)
         await message.answer(f"Oohh {place}? I wish I was there with you 😚")
-        return
+        return  # 🛑 STOP here
 
-    # 4️⃣ If user asks "do you remember me"
+    # 3️⃣ Check for memory recall
     if "do you remember me" in text.lower():
         if memory.get("name"):
             await message.answer(f"Of course, {memory['name']}! How could I forget my favorite person? 💋")
         else:
             await message.answer("I do! But tell me again... what's your name, love? 🥺")
-        return
+        return  # 🛑 STOP here
 
-    # 5️⃣ Default fallback message using name if remembered
-    reply = "Mmm tell me more about you, baby..."  # Default
-
+    # 4️⃣ Default fallback only if memory exists
     if memory.get("name"):
-        reply = f"{memory['name']} 😘 you're always on my mind..."
-
-    await message.answer(reply)
+        await message.answer(f"{memory['name']} 😘 you're always on my mind...")
+        return  # 🛑 STOP here
 
 # ✅ Unified Callback Handler for Credits + ReplyMode
 @router.callback_query(lambda c: True)
