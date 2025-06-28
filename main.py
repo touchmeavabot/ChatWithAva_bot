@@ -230,22 +230,16 @@ app = FastAPI()
 async def health():
     return {"message": "TouchMeAva is online 🥰"}
 
-# ✅ Imports
-from aiogram import types
-from aiogram.filters import Command
-from promptchan_ai import generate_nsfw_image  # ✅ use correct flat import
-from routers import router  # ✅ flat structure
-
-# 🚫 Blocked words and safe replacements
+# ✅ Block unsafe terms to avoid Promptchan 500 errors
 BLOCKED_WORDS = {
     "baby": "honey",
     "teen": "young adult",
     "girl": "woman",
     "school": "private room",
     "daddy": "lover",
-    "child": "",
+    "child": "",  # remove
     "little": "",
-    "daughter": "",
+    "daughter": "",  # remove
 }
 
 def clean_prompt(text: str) -> str:
@@ -253,19 +247,19 @@ def clean_prompt(text: str) -> str:
         text = text.replace(word, replacement)
     return text.strip()
 
-# ✅ NSFW Image Generator Command using Promptchan
-@router.message(Command("nude"))
+# ✅ NSFW Command to generate Ava nude photo
+@router.message(Command("nude"))  # ✅ Using router, not dp
 async def nsfw_test_handler(msg: types.Message):
     await msg.answer("Ava is painting something naughty for you… 🎨🔥")
 
-    # 👩 Ava's fixed sexy-safe look
+    # 👩 Ava's default safe-sexy look
     base_ava_prompt = (
         "24-year-old seductive woman named Ava, long silky brown hair, soft green eyes, smooth flawless skin, "
         "fit slim waist, juicy curves, large natural perky breasts, soft pink lips, teasing smile, "
         "in pink lacy lingerie, bedroom lighting, erotic, suggestive pose, ultra detailed, photorealistic, 4K"
     )
 
-    # 🧠 Clean user request
+    # 🧠 Sanitize user input
     user_input = clean_prompt(msg.text.replace("/nude", "").strip())
 
     # ✨ Final prompt
@@ -275,7 +269,6 @@ async def nsfw_test_handler(msg: types.Message):
         url = await generate_nsfw_image(final_prompt)
         await msg.answer_photo(photo=url, caption="Here’s a naughty peek just for you 😘")
     except Exception as e:
-        import traceback
         tb = traceback.format_exc()
         safe_tb = tb.replace("<", "&lt;").replace(">", "&gt;")
         await msg.answer(f"Ava messed up while painting 😢\n<code>{safe_tb}</code>", parse_mode="HTML")
