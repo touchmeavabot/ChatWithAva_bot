@@ -98,20 +98,18 @@ async def unlock_nude_callback(callback: CallbackQuery):
         await callback.answer("❌ Not enough Ava Credits (50 needed)", show_alert=True)
         return
 
-    # ✅ Update caption of blurred image first
     try:
+        # Edit the blurred image caption first
         await callback.message.edit_caption("🔓 Opening the photo… wait a sec 😘")
-        await asyncio.sleep(1.1)
+        await asyncio.sleep(0.8)
     except:
         pass
 
-    # ✅ Show uploading animation
+    # Send fake loading message
+    loading_msg = await callback.message.answer("⏳ Generating your naughty surprise...")
+
     await bot.send_chat_action(callback.message.chat.id, action="upload_photo")
 
-    # Optional: slight delay (already covered by generate_nsfw_image time)
-    # await asyncio.sleep(2)
-
-    # Build prompt
     base_prompt = (
         "24-year-old seductive woman named Ava, long silky brown hair, soft green eyes, smooth flawless skin, "
         "fit slim waist, juicy curves, large natural perky breasts, soft pink lips, teasing smile, "
@@ -125,8 +123,12 @@ async def unlock_nude_callback(callback: CallbackQuery):
 
         await credit_manager.add_credits(user_id, -50)
 
+        # Replace the original photo with the real one
         new_media = types.InputMediaPhoto(media=url, caption="Here’s your naughty surprise 😘")
         await callback.message.edit_media(media=new_media)
+
+        # Delete the loading message
+        await loading_msg.delete()
 
         user_nude_prompt.pop(user_id, None)
 
