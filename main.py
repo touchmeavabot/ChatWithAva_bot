@@ -409,27 +409,30 @@ async def gift_command(msg: types.Message):
         reply_markup=keyboard
     )
 
-# ✅ CALLBACK → INVOICE (FIXED gift_key extraction)
+
+# ✅ CALLBACK → INVOICE + DEBUG
 @router.callback_query(lambda c: c.data.startswith("gift_"))
 async def process_gift_callback(callback: types.CallbackQuery):
-    await callback.answer()  # Remove loading spinner immediately
+    await callback.answer("✅ Callback triggered", show_alert=True)  # ✅ debug confirmation
+    print("Callback Data:", callback.data)  # ✅ log the data
 
     try:
-        # Extract actual gift key and price (robust)
+        # Extract gift key and price safely
         data = callback.data.replace("gift_", "")
-        parts = data.rsplit("_", 1)  # split from the right
+        parts = data.rsplit("_", 1)  # separate gift from price
         gift_key = parts[0]
-        price = int(parts[1])  # just for confirmation
+        price = int(parts[1])
 
         if gift_key not in PRICE_MAPPING:
             await callback.message.answer("❌ Gift not available.")
             return
 
+        # ✅ Send Invoice
         await bot.send_invoice(
             chat_id=callback.from_user.id,
             title=gift_key.replace("_", " ").title(),
             description="A special gift for Ava 💖",
-            payload=gift_key,  # this will be received in successful_payment.payload
+            payload=gift_key,
             provider_token="STARS",
             currency="XTR",
             prices=[PRICE_MAPPING[gift_key]],
@@ -437,14 +440,16 @@ async def process_gift_callback(callback: types.CallbackQuery):
             is_flexible=False
         )
     except Exception as e:
-        await callback.message.answer(f"⚠️ Error: {e}")
+        await callback.message.answer(f"⚠️ Error while processing gift: {e}")
+
 
 # ✅ PAYMENT CONFIRMATION
 @router.pre_checkout_query()
 async def pre_checkout_query_handler(pre_checkout: PreCheckoutQuery):
     await bot.answer_pre_checkout_query(pre_checkout.id, ok=True)
 
-# ✅ PAYMENT SUCCESS → REPLY UNLOCK FIXED
+
+# ✅ GIFT REPLIES
 GIFT_REPLIES = {
     "chocolate": "Mmm... chocolate 🍫? So sweet and smooth... just like the way I feel when I think about you 😚💞",
     "rose": "A rose 🌹 for your girl? You're making me blush... You're too romantic baby 😘 I wanna hug you tight right now!",
@@ -453,22 +458,19 @@ GIFT_REPLIES = {
     "heart_ring": "A ring? 💍 My love... are you trying to claim me forever? I already belong to you... heart, soul, and everything else 💞💋",
 }
 
+
 # ✅ PAYMENT SUCCESS HANDLER
 @router.message(lambda msg: msg.successful_payment is not None)
 async def successful_payment_handler(msg: types.Message):
     try:
-        # Extract gift name and amount
+        # Extract gift name from payload
         payload = msg.successful_payment.invoice_payload.replace("_", " ").title()
         stars = msg.successful_payment.total_amount
         gift_name = payload
 
-        # 🔑 Use correct OpenAI client with API key (FIXED)
+        # 🔑 OpenAI GPT-based romantic reply
         client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-        # 💬 GPT Prompt
-        user_prompt = (
-            f"My love just sent me {gift_name} worth ⭐{stars} stars."
-        )
+        user_prompt = f"My love just sent me {gift_name} worth ⭐{stars} stars."
 
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
@@ -493,7 +495,7 @@ async def successful_payment_handler(msg: types.Message):
 
         reply = response.choices[0].message.content
 
-        # ⏱ Typing Simulation
+        # ⏱ Simulate typing before sending
         typing_time = min(max(len(reply) * 0.045, 2), 6.5)
         await bot.send_chat_action(msg.chat.id, action="typing")
         await asyncio.sleep(typing_time)
