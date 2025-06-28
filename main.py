@@ -69,13 +69,13 @@ dp = Dispatcher(storage=MemoryStorage())
 router = Router()
 dp.include_router(router)  # ✅ IMPORTANT: include router
 
-# ✅ Step 1: /nude command shows teaser
-@router.message(Command("nude"))
+# ✅ Step 1: /pic command shows teaser
+@router.message(Command("pic"))
 async def nsfw_paid_handler(msg: types.Message):
     user_id = msg.from_user.id
 
     # Clean & store user prompt
-    user_input = clean_prompt(msg.text.replace("/nude", "").strip())
+    user_input = clean_prompt(msg.text.replace("/pic", "").strip())
     user_nude_prompt[user_id] = user_input
 
     # Teaser with unlock button
