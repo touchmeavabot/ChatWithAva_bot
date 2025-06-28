@@ -23,6 +23,7 @@ from utils import smart_flirty_line
 from credits import CreditManager
 from promptchan_ai import generate_nsfw_image
 from stars_gift_handler import stars_router
+from aiogram.types import Message
 
 # 🚫 Blocked words and safe replacements
 BLOCKED_WORDS = {
