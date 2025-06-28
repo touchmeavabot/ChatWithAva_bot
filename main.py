@@ -3,6 +3,7 @@ import openai
 import asyncio
 import traceback
 import datetime
+import random
 from collections import defaultdict
 
 # ✅ FastAPI
@@ -31,16 +32,36 @@ from tts import generate_voice
 from utils import smart_flirty_line
 from credits import CreditManager
 from promptchan_ai import generate_nsfw_image
+from reply_mode_manager import get_reply_mode
 
 # ✅ Routers
 from stars_gift_handler import stars_router
-from tg_gift_handler import credit_gift_router  # ✅ NEW CREDIT GIFT SYSTEM
-from credits import CreditManager
-from openai import AsyncOpenAI
-from reply_mode_manager import get_reply_mode  # ✅ NEW, must be added
+from tg_gift_handler import credit_gift_router
 
+# ✅ ENV
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+WEBHOOK_URL = "https://chatwithavabot-production.up.railway.app/webhook"
 
-# 🚫 Blocked words and safe replacements
+if not BOT_TOKEN:
+    raise Exception("BOT_TOKEN not set!")
+if not OPENAI_API_KEY:
+    raise Exception("OPENAI_API_KEY not set!")
+
+# ✅ Init Bot, Dispatcher, Global Router
+bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.HTML)
+dp = Dispatcher(storage=MemoryStorage())
+router = Router()
+
+# ✅ Attach routers (Order matters)
+dp.include_router(router)              # 🔥 Global commands
+dp.include_router(stars_router)       # ⭐ Telegram Stars gifts
+dp.include_router(credit_gift_router) # 💖 Credit gift system
+
+# ✅ Async OpenAI Client
+openai_client = AsyncOpenAI()
+
+# 🚫 Blocked words filter
 BLOCKED_WORDS = {
     "baby": "honey",
     "teen": "young adult",
@@ -57,39 +78,13 @@ def clean_prompt(text: str) -> str:
         text = text.replace(word, replacement)
     return text.strip()
 
-# 🧠 Per-user prompt memory
+# 🧠 Per-user Memory
 user_nude_prompt = {}
-
-# ✅ Ava Typing Lock Mode
 user_message_buffer = defaultdict(list)
 user_typing_cooldown = defaultdict(lambda: 0)
-
-# ✅ Ava Reminder
 user_last_active = defaultdict(lambda: datetime.datetime.utcnow())
 user_next_reminder = defaultdict(lambda: None)
-
-# ✅ Reply Mode Store
 user_reply_mode = defaultdict(lambda: "text")
-
-# ✅ ENV
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-WEBHOOK_URL = "https://chatwithavabot-production.up.railway.app/webhook"
-
-if not BOT_TOKEN:
-    raise Exception("BOT_TOKEN not set!")
-if not OPENAI_API_KEY:
-    raise Exception("OPENAI_API_KEY not set!")
-
-bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.HTML)
-dp = Dispatcher(storage=MemoryStorage())
-
-# ✅ Include your routers in correct order
-dp.include_router(stars_router)    # For Stars system
-dp.include_router(credit_gift_router)  # ✅ Don't forget to add this one too!
-
-# ✅ Async OpenAI client setup (perfect)
-openai_client = AsyncOpenAI()
 
 # 💖 Gift Reply Prompt
 GIFT_REPLY_PROMPT = """
@@ -100,7 +95,7 @@ Reply:
 
 # 💌 Main gift handler
 @credit_gift_router.callback_query(lambda c: c.data.startswith("gift_credit_"))
-async def process_credit_gift(callback: types.CallbackQuery, bot: Bot):
+async def process_credit_gift(callback: CallbackQuery):
     try:
         _, gift_key, credit_str = callback.data.split("_", 2)
         gift_key = gift_key.lower()
@@ -113,12 +108,9 @@ async def process_credit_gift(callback: types.CallbackQuery, bot: Bot):
             await callback.answer("❌ Not enough credits!", show_alert=True)
             return
 
-        # 💸 Deduct credits
         await CreditManager.remove_credits(user_id, required_credits)
 
-        # 💭 Generate flirty AI reply
         prompt = GIFT_REPLY_PROMPT.format(gift_name=gift_key.replace("_", " ").title())
-        openai_client = AsyncOpenAI()
         response = await openai_client.chat.completions.create(
             model="gpt-4",
             messages=[{"role": "user", "content": prompt}],
@@ -127,17 +119,16 @@ async def process_credit_gift(callback: types.CallbackQuery, bot: Bot):
         )
         ai_reply = response.choices[0].message.content.strip()
 
-        # 🧠 Check reply mode
-        reply_mode = await get_reply_mode(user_id)  # "Text", "Voice", "Random"
+        reply_mode = await get_reply_mode(user_id)
         if reply_mode == "Random":
             reply_mode = random.choice(["Text", "Voice"])
 
         if reply_mode == "Voice":
-            await bot.send_chat_action(callback.from_user.id, action=types.ChatAction.RECORD_VOICE)
+            await bot.send_chat_action(user_id, action=ChatAction.RECORD_VOICE)
             voice = await generate_voice(ai_reply)
-            await bot.send_voice(chat_id=callback.from_user.id, voice=voice, caption="💋")
+            await bot.send_voice(chat_id=user_id, voice=voice, caption="💋")
         else:
-            await bot.send_chat_action(callback.from_user.id, action=types.ChatAction.TYPING)
+            await bot.send_chat_action(user_id, action=ChatAction.TYPING)
             await callback.message.answer(ai_reply)
 
         await callback.answer("Gift received 💖")
