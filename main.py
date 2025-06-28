@@ -251,6 +251,28 @@ def clean_prompt(text: str) -> str:
         text = text.replace(word, replacement)
     return text.strip()
 
+from aiogram import types
+from aiogram.filters import Command
+from promptchan_ai import generate_nsfw_image  # ✅ Corrected import
+from routers import router  # ✅ Corrected import
+
+# 🚫 Blocked words and safe replacements
+BLOCKED_WORDS = {
+    "baby": "honey",
+    "teen": "young adult",
+    "girl": "woman",
+    "school": "private room",
+    "daddy": "lover",
+    "child": "",  # remove
+    "little": "",
+    "daughter": "",  # remove
+}
+
+def clean_prompt(text: str) -> str:
+    for word, replacement in BLOCKED_WORDS.items():
+        text = text.replace(word, replacement)
+    return text.strip()
+
 # ✅ NSFW Image Generator Command using Promptchan
 @router.message(Command("nude"))
 async def nsfw_test_handler(msg: types.Message):
