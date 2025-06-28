@@ -153,16 +153,16 @@ async def handle_star_gift_invoice(callback: CallbackQuery):
 
         await callback.answer()
 
-       await bot.send_invoice(
-           chat_id=callback.from_user.id,
-           title=f"🎁 {gift['name']}",
-           description=f"Send {gift['name']} to Ava 💖",
-           payload=f"gift_{gift_key}",
-           provider_token="STARS",  # ✅ Use quotes
-           currency="XTR",
-           prices=[LabeledPrice(label=f"{gift['name']}", amount=gift["price"])],
-           start_parameter="send_gift"
-       )
+        await bot.send_invoice(  # ✅ This must be indented properly
+            chat_id=callback.from_user.id,
+            title=f"🎁 {gift['name']}",
+            description=f"Send {gift['name']} to Ava 💖",
+            payload=f"gift_{gift_key}",
+            provider_token="STARS",
+            currency="XTR",
+            prices=[LabeledPrice(label=f"{gift['name']}", amount=gift["price"])],
+            start_parameter="send_gift"
+        )
 
     except Exception as e:
         await callback.message.answer(f"⚠️ Error creating invoice: {e}")
