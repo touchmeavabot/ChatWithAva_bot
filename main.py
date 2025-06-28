@@ -83,12 +83,13 @@ async def nsfw_paid_handler(msg: types.Message):
         [InlineKeyboardButton(text="🔓 Unlock Photo (50 Credits)", callback_data="unlock_nude")]
     ])
     await msg.answer_photo(
-        photo="https://i.postimg.cc/yYRbYZ4Y/IMG-1554.jpg",
+        photo="https://i.postimg.cc/HkXKk7M9/IMG-1558.jpg",  # teaser blur
         caption="Hehe… this naughty peek is locked. Wanna see what Ava is hiding? 😘",
         reply_markup=kb
     )
 
-# ✅ Step 2: Unlock callback handler (for /nude button)
+
+# ✅ Step 2: Unlock callback handler (for /pic button)
 @router.callback_query(F.data == "unlock_nude")
 async def unlock_nude_callback(callback: CallbackQuery):
     user_id = callback.from_user.id
@@ -99,43 +100,48 @@ async def unlock_nude_callback(callback: CallbackQuery):
         await callback.answer("❌ Not enough Ava Credits (50 needed)", show_alert=True)
         return
 
-    # ✅ Step 1: Try to update the caption of the same teaser image
-    try:
-        await callback.message.edit_caption(
-            caption="Opening the photo… wait a sec 😘",
-            reply_markup=None  # Remove the unlock button
-        )
-        await asyncio.sleep(0.8)  # Needed so Telegram registers the edit
-    except Exception as e:
-        print("Caption update failed:", e)
+    await callback.answer("Opening the photo… 😏")
 
-    # ✅ Step 2: Show typing/upload animation
+    # ✅ Step 1: Replace blurred image with Locked premium image
+    try:
+        await callback.message.edit_media(
+            media=types.InputMediaPhoto(
+                media="https://i.postimg.cc/yYRbYZ4Y/IMG-1554.jpg",  # your stylish "Locked" image
+                caption="🔓 Unlocking your surprise…",
+            )
+        )
+        await asyncio.sleep(0.8)
+    except Exception as e:
+        print("Locked image step failed:", e)
+
+    # ✅ Step 2: Show upload animation
     try:
         await bot.send_chat_action(callback.message.chat.id, action="upload_photo")
         await asyncio.sleep(0.6)
     except:
         pass
 
-    # ✅ Step 3: Generate image
+    # ✅ Step 3: Prepare NSFW prompt
     base_prompt = (
-                "ultra-detailed anime illustration, full body of seductive busty woman named Ava"
-"long flowing chestnut brown hair, emerald green eyes, soft fair glowing skin"
-"dominant milf aura, mature sexy expression, teasing seductive smile"
-"large perky anime-style breasts, wide juicy hips, thick thighs, hourglass shape"
-"pink lacy lingerie, exposed cleavage, slightly transparent panties"
-"on bed, suggestive pose, soft bedroom lighting, glowing glossy skin"
-"anime artstyle, high contrast, sharp linework, soft shading, 4K high resolution"
+        "ultra-detailed anime illustration, full body of seductive busty woman named Ava. "
+        "long flowing chestnut brown hair, emerald green eyes, soft fair glowing skin. "
+        "dominant milf aura, mature sexy expression, teasing seductive smile. "
+        "large perky anime-style breasts, wide juicy hips, thick thighs, hourglass shape. "
+        "pink lacy lingerie, exposed cleavage, slightly transparent panties. "
+        "on bed, suggestive pose, soft bedroom lighting, glowing glossy skin. "
+        "anime artstyle, high contrast, sharp linework, soft shading, 4K high resolution."
     )
     user_input = user_nude_prompt.get(user_id, "")
     final_prompt = f"{base_prompt}, {user_input}" if user_input else base_prompt
 
     try:
+        # ✅ Step 4: Generate image
         url = await generate_nsfw_image(final_prompt)
 
-        # ✅ Deduct credits
+        # ✅ Step 5: Deduct credits
         await credit_manager.add_credits(user_id, -50)
 
-        # ✅ Replace teaser image with final nude
+        # ✅ Step 6: Replace with final nude image
         await callback.message.edit_media(
             media=types.InputMediaPhoto(
                 media=url,
@@ -143,6 +149,7 @@ async def unlock_nude_callback(callback: CallbackQuery):
             )
         )
 
+        # ✅ Step 7: Clear prompt
         user_nude_prompt.pop(user_id, None)
 
     except Exception as e:
