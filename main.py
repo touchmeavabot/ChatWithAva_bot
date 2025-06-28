@@ -234,20 +234,21 @@ async def health():
 async def nsfw_test_handler(msg: types.Message):
     await msg.answer("Ava is painting something naughty for you… 🎨🔥")
 
-    # 👩 Ava's fixed sexy-safe look (optimized to avoid API errors)
+    # 👩 Ava's fixed appearance (always used)
     base_ava_prompt = (
-        "seductive young woman named Ava, brown hair, green eyes, smooth skin, curvy body, large breasts, "
-        "soft lips, sexy lingerie, photorealistic, erotic pose, ultra detailed, soft lighting, 4K"
+        "24-year-old seductive woman named Ava, long silky brown hair, soft green eyes, smooth flawless skin, "
+        "fit slim waist, juicy curves, large natural perky breasts, soft pink lips, teasing smile, "
+        "in pink lacy lingerie, bedroom lighting, erotic, suggestive pose, ultra detailed, photorealistic, 4K"
     )
 
-    # 🧠 Grab extra text from user if any (e.g. '/nude show me your boobs')
+    # 🧠 Get user extra text, if any
     user_input = msg.text.replace("/nude", "").strip()
 
-    # ✨ Final image prompt: Ava’s base + user’s extra input
+    # ✨ Final prompt = Ava's look + user’s request
     if user_input:
         final_prompt = f"{base_ava_prompt}, {user_input}"
     else:
-        final_prompt = base_ava_prompt
+        final_prompt = f"{base_ava_prompt}, erotic pose"
 
     try:
         url = await generate_nsfw_image(final_prompt)
