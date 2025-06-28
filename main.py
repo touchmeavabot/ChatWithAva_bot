@@ -101,17 +101,24 @@ async def unlock_nude_callback(callback: CallbackQuery):
 
     await callback.answer("Opening the photo for you… 😏")
 
+    # ✅ Step 1: Try to update the caption of the same teaser image
     try:
-        # ✅ Step 1: Edit the blurred image's caption
-        await callback.message.edit_caption("🔓 Opening the photo… wait a sec 😘")
-        await asyncio.sleep(0.6)  # Enough delay for Telegram to update UI
+        await callback.message.edit_caption(
+            caption="🔓 Opening the photo… wait a sec 😘",
+            reply_markup=None  # Remove the unlock button
+        )
+        await asyncio.sleep(0.8)  # Needed so Telegram registers the edit
+    except Exception as e:
+        print("Caption update failed:", e)
 
-        # ✅ Step 2: Show typing animation
+    # ✅ Step 2: Show typing/upload animation
+    try:
         await bot.send_chat_action(callback.message.chat.id, action="upload_photo")
+        await asyncio.sleep(0.6)
     except:
         pass
 
-    # Build prompt
+    # ✅ Step 3: Generate image
     base_prompt = (
         "24-year-old seductive woman named Ava, long silky brown hair, soft green eyes, smooth flawless skin, "
         "fit slim waist, juicy curves, large natural perky breasts, soft pink lips, teasing smile, "
@@ -121,17 +128,19 @@ async def unlock_nude_callback(callback: CallbackQuery):
     final_prompt = f"{base_prompt}, {user_input}" if user_input else base_prompt
 
     try:
-        # ✅ Step 3: Generate image
         url = await generate_nsfw_image(final_prompt)
 
-        # ✅ Step 4: Deduct credits
+        # ✅ Deduct credits
         await credit_manager.add_credits(user_id, -50)
 
-        # ✅ Step 5: Replace image and update caption
-        new_media = types.InputMediaPhoto(media=url, caption="Here’s your naughty surprise 😘")
-        await callback.message.edit_media(media=new_media)
+        # ✅ Replace teaser image with final nude
+        await callback.message.edit_media(
+            media=types.InputMediaPhoto(
+                media=url,
+                caption="Here’s your naughty surprise 😘"
+            )
+        )
 
-        # ✅ Step 6: Clear stored prompt
         user_nude_prompt.pop(user_id, None)
 
     except Exception as e:
