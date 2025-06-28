@@ -3,7 +3,7 @@ import os
 import asyncio
 
 API_KEY = os.getenv("PROMPTCHAN_API_KEY")
-BASE_URL = "https://prod.aicloudnetservices.com/"
+BASE_URL = "https://prod.aicloudnetservices.com/v1/text-to-image"
 
 async def generate_nsfw_image(prompt: str) -> str:
     headers = {
@@ -23,12 +23,15 @@ async def generate_nsfw_image(prompt: str) -> str:
     }
 
     async with aiohttp.ClientSession() as session:
-        async with session.post(BASE_URL + "v1/generate", headers=headers, json=payload) as resp:
+        async with session.post(BASE_URL, headers=headers, json=payload) as resp:
             if resp.status != 200:
                 raise Exception(f"Promptchan API failed. Status: {resp.status}")
             data = await resp.json()
 
-            # Check and return image URL
+            # Debug print
+            print("🧠 API Raw Response:", data)
+
+            # Get image URL
             if "data" in data and len(data["data"]) > 0 and "url" in data["data"][0]:
                 return data["data"][0]["url"]
             else:
