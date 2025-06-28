@@ -229,14 +229,29 @@ app = FastAPI()
 async def health():
     return {"message": "TouchMeAva is online 🥰"}
 
-# ✅ NSFW Image Generator Command using RunPod
+# ✅ NSFW Image Generator Command using Promptchan
 @router.message(Command("nude"))
 async def nsfw_test_handler(msg: types.Message):
     await msg.answer("Ava is painting something naughty for you… 🎨🔥")
 
-    prompt = "beautiful seductive nude woman, soft lighting, photorealistic, high detail, erotic pose"
+    # 👩 Ava's fixed appearance (always used)
+    base_ava_prompt = (
+        "24-year-old seductive woman named Ava, long brown hair, soft green eyes, flawless clear skin, "
+        "slim waist, curvy figure, large perky breasts, soft pink lips, inviting seductive smile, "
+        "goddess-like beauty, erotic, highly detailed, ultra photorealistic, realistic lighting, 4K"
+    )
+
+    # 🧠 Get user extra text, if any
+    user_input = msg.text.replace("/nude", "").strip()
+
+    # ✨ Final prompt = Ava's look + user’s request
+    if user_input:
+        final_prompt = f"{base_ava_prompt}, {user_input}"
+    else:
+        final_prompt = f"{base_ava_prompt}, erotic pose"
+
     try:
-        url = await generate_nsfw_image(prompt)
+        url = await generate_nsfw_image(final_prompt)
         await msg.answer_photo(photo=url, caption="Here’s a naughty peek just for you 😘")
     except Exception as e:
         import traceback
