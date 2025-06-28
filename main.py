@@ -5,10 +5,9 @@ import traceback
 import datetime
 import asyncio
 from fastapi import FastAPI, Request
-from aiogram import Bot, Dispatcher, types
+from aiogram import Bot, Dispatcher, types, F, Router  # ✅ FIXED HERE
 from aiogram.enums import ParseMode, ChatAction
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.dispatcher.router import Router
 from aiogram.filters import Command
 from aiogram.types import (
     Update,
@@ -48,7 +47,7 @@ if not OPENAI_API_KEY:
 bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.HTML)
 dp = Dispatcher(storage=MemoryStorage())
 router = Router()
-dp.include_router(router)
+dp.include_router(router)  # ✅ IMPORTANT: include router
 
 # 🔹 Credit Manager
 credit_manager = CreditManager()
@@ -222,14 +221,6 @@ PRICE_MAPPING = {
     "chocolate": LabeledPrice(label="Chocolate", amount=2),
 }
 
-# ✅ FASTAPI setup
-from fastapi import FastAPI
-app = FastAPI()
-
-@app.get("/")
-async def health():
-    return {"message": "TouchMeAva is online 🥰"}
-
 # 🚫 Blocked words and safe replacements
 BLOCKED_WORDS = {
     "baby": "honey",
@@ -260,18 +251,18 @@ async def nsfw_paid_handler(msg: types.Message):
     user_nude_prompt[user_id] = user_input
 
     # Teaser with unlock button
-    kb = types.InlineKeyboardMarkup(inline_keyboard=[
-        [types.InlineKeyboardButton(text="🔓 Unlock Photo (50 Credits)", callback_data="unlock_nude")]
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🔓 Unlock Photo (50 Credits)", callback_data="unlock_nude")]
     ])
     await msg.answer_photo(
-        photo="https://i.postimg.cc/8ktyb7yL/IMG-1515.png",  # Your blurred teaser
+        photo="https://i.postimg.cc/8ktyb7yL/IMG-1515.png",
         caption="Hehe… this naughty peek is locked. Wanna see what Ava is hiding? 😘",
         reply_markup=kb
     )
 
 # ✅ Step 2: Unlock callback handler
-@router.callback_query(lambda c: c.data == "unlock_nude")
-async def unlock_nude_callback(callback: types.CallbackQuery):
+@router.callback_query(F.data == "unlock_nude")
+async def unlock_nude_callback(callback: CallbackQuery):
     user_id = callback.from_user.id
 
     # Check balance
