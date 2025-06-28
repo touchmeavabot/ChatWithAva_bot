@@ -97,7 +97,7 @@ Reply:
 @credit_gift_router.callback_query(lambda c: c.data.startswith("gift_credit_"))
 async def process_credit_gift(callback: CallbackQuery):
     try:
-        _, gift_key, credit_str = callback.data.split("_", 2)
+        _, _, gift_key, credit_str = callback.data.split("_", 3)
         gift_key = gift_key.lower()
         required_credits = int(credit_str)
 
