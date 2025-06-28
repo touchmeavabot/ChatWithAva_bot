@@ -244,7 +244,8 @@ async def nsfw_test_handler(msg: types.Message):
     except Exception as e:
         import traceback
         tb = traceback.format_exc()
-        await msg.answer(f"Ava messed up while painting 😢\n<code>{tb}</code>", parse_mode="HTML")
+        safe_tb = tb.replace("<", "&lt;").replace(">", "&gt;")
+        await msg.answer(f"Ava messed up while painting 😢\n<code>{safe_tb}</code>", parse_mode="HTML")
 
 # ✅ Ava Reminder Loop (Step 3)
 async def reminder_loop():
