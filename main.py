@@ -58,9 +58,9 @@ app = FastAPI()
 @app.on_event("startup")
 async def on_startup():
     await credit_manager.connect()
-    await asyncio.sleep(2)
-    await bot.set_webhook(WEBHOOK_URL)
-
+    # ❌ REMOVE webhook setup to avoid Telegram flood error
+    # await asyncio.sleep(2)
+    # await bot.set_webhook(WEBHOOK_URL)
 # 🔹 Credit Packs
 CREDIT_PACKS = {
     "pack_300": {"title": "💎 300 Ava Credits", "price": 100, "credits": 300},
