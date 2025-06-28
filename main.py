@@ -261,12 +261,12 @@ async def nsfw_paid_handler(msg: types.Message):
         reply_markup=kb
     )
 
-# ✅ Step 2: Unlock callback handler
+# ✅ Step 2: Unlock callback handler (for /nude button)
 @router.callback_query(F.data == "unlock_nude")
 async def unlock_nude_callback(callback: CallbackQuery):
     user_id = callback.from_user.id
 
-    # Check balance
+    # ✅ Check user credit balance
     balance = await credit_manager.get_credits(user_id)
     if balance < 50:
         await callback.answer("❌ Not enough Ava Credits (50 needed)", show_alert=True)
@@ -274,7 +274,7 @@ async def unlock_nude_callback(callback: CallbackQuery):
 
     await callback.answer("Painting something sexy for you… 🎨", show_alert=False)
 
-    # Final prompt
+    # ✅ Final prompt: Ava's default NSFW + user input
     base_prompt = (
         "24-year-old seductive woman named Ava, long silky brown hair, soft green eyes, smooth flawless skin, "
         "fit slim waist, juicy curves, large natural perky breasts, soft pink lips, teasing smile, "
@@ -284,16 +284,16 @@ async def unlock_nude_callback(callback: CallbackQuery):
     final_prompt = f"{base_prompt}, {user_input}" if user_input else base_prompt
 
     try:
-        # Generate
+        # ✅ Generate NSFW image
         url = await generate_nsfw_image(final_prompt)
 
-        # Deduct credits
+        # ✅ Deduct credits
         await credit_manager.deduct_credits(user_id, 50)
 
-        # Send photo
+        # ✅ Send the photo
         await callback.message.answer_photo(photo=url, caption="Here’s your naughty surprise 😘")
 
-        # Clear prompt
+        # ✅ Clear user’s stored prompt
         user_nude_prompt.pop(user_id, None)
 
     except Exception as e:
