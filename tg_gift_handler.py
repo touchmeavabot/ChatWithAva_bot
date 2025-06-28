@@ -22,7 +22,7 @@ GIFTS = [
     {"emoji": "🔑", "name": "Key to Heart", "credits": 350},
     {"emoji": "🌺", "name": "Hibiscus", "credits": 350},
     {"emoji": "🌹", "name": "Rose", "credits": 250},
-    {"emoji": "🍬", "name": "Candy", "credits": 250},
+    {"emoji": "🍬", "name": "Candy", "credits": 2},
 ]
 
 # ✅ Build gift keyboard
