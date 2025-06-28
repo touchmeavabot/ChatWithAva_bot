@@ -158,7 +158,7 @@ async def handle_star_gift_invoice(callback: CallbackQuery):
             title=f"🎁 {gift['name']}",
             description=f"Send {gift['name']} to Ava 💖",
             payload=f"gift_{gift_key}",
-            provider_token=STARS_PAYMENT_TOKEN,
+            provider_token=STARS,
             currency="XTR",
             prices=[LabeledPrice(label=gift['name'], amount=gift["price"])],
             start_parameter="send_gift"
