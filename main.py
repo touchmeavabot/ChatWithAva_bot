@@ -232,8 +232,8 @@ async def successful_payment_handler(msg: types.Message):
     await credit_manager.add_credits(user_id, pack["credits"])
     await msg.answer(f"✅ Payment successful!\n💎 {pack['credits']} Ava Credits have been added to your account.")
 
-# ✅ /replymode command
-@router.message(Command("replymode"))
+# ✅ /style command
+@router.message(Command("style"))
 async def reply_mode_cmd(msg: types.Message):
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [
