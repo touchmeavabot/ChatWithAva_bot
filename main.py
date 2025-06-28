@@ -222,17 +222,19 @@ PRICE_MAPPING = {
     "chocolate": LabeledPrice(label="Chocolate", amount=2),
 }
 
-# ✅ FASTAPI
+# ✅ FASTAPI setup
+from fastapi import FastAPI
 app = FastAPI()
 
 @app.get("/")
 async def health():
     return {"message": "TouchMeAva is online 🥰"}
 
+# ✅ Imports
 from aiogram import types
 from aiogram.filters import Command
-from app.promptchan_ai import generate_nsfw_image
-from app.routers import router
+from promptchan_ai import generate_nsfw_image  # ✅ use correct flat import
+from routers import router  # ✅ flat structure
 
 # 🚫 Blocked words and safe replacements
 BLOCKED_WORDS = {
@@ -241,31 +243,9 @@ BLOCKED_WORDS = {
     "girl": "woman",
     "school": "private room",
     "daddy": "lover",
-    "child": "",  # remove
+    "child": "",
     "little": "",
-    "daughter": "",  # remove
-}
-
-def clean_prompt(text: str) -> str:
-    for word, replacement in BLOCKED_WORDS.items():
-        text = text.replace(word, replacement)
-    return text.strip()
-
-from aiogram import types
-from aiogram.filters import Command
-from promptchan_ai import generate_nsfw_image  # ✅ Corrected import
-from routers import router  # ✅ Corrected import
-
-# 🚫 Blocked words and safe replacements
-BLOCKED_WORDS = {
-    "baby": "honey",
-    "teen": "young adult",
-    "girl": "woman",
-    "school": "private room",
-    "daddy": "lover",
-    "child": "",  # remove
-    "little": "",
-    "daughter": "",  # remove
+    "daughter": "",
 }
 
 def clean_prompt(text: str) -> str:
@@ -285,14 +265,11 @@ async def nsfw_test_handler(msg: types.Message):
         "in pink lacy lingerie, bedroom lighting, erotic, suggestive pose, ultra detailed, photorealistic, 4K"
     )
 
-    # 🧠 Get cleaned user request
+    # 🧠 Clean user request
     user_input = clean_prompt(msg.text.replace("/nude", "").strip())
 
-    # ✨ Final image prompt
-    if user_input:
-        final_prompt = f"{base_ava_prompt}, {user_input}"
-    else:
-        final_prompt = base_ava_prompt
+    # ✨ Final prompt
+    final_prompt = f"{base_ava_prompt}, {user_input}" if user_input else base_ava_prompt
 
     try:
         url = await generate_nsfw_image(final_prompt)
