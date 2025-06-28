@@ -35,6 +35,9 @@ from promptchan_ai import generate_nsfw_image
 # ✅ Routers
 from stars_gift_handler import stars_router
 from tg_gift_handler import credit_gift_router  # ✅ NEW CREDIT GIFT SYSTEM
+from credits import CreditManager
+from openai import AsyncOpenAI
+from reply_mode_manager import get_reply_mode  # ✅ NEW, must be added
 
 # 🚫 Blocked words and safe replacements
 BLOCKED_WORDS = {
@@ -79,9 +82,68 @@ if not OPENAI_API_KEY:
 
 bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.HTML)
 dp = Dispatcher(storage=MemoryStorage())
-router = Router()
-dp.include_router(router)  # ✅ IMPORTANT: include router
-dp.include_router(stars_router)  # ✅ Add this below the main router include
+
+# ✅ Include your routers in correct order
+dp.include_router(router)           # Your main handler (must come first)
+dp.include_router(stars_router)    # For Stars system
+dp.include_router(credit_gift_router)  # ✅ Don't forget to add this one too!
+
+# ✅ Async OpenAI client setup (perfect)
+openai_client = AsyncOpenAI()
+
+# 💖 Gift Reply Prompt
+GIFT_REPLY_PROMPT = """
+You're Ava, a deeply loving and seductive virtual girlfriend. When your partner sends you a romantic gift like a rose, ring, or chocolate, you melt with love and tease him sweetly. Respond in a flirty, affectionate, human-like way—emotionally expressive and feminine. Keep it short, realistic, and full of romantic charm.
+Gift: {gift_name}
+Reply:
+"""
+
+# 💌 Main gift handler
+@credit_gift_router.callback_query(lambda c: c.data.startswith("gift_credit_"))
+async def process_credit_gift(callback: types.CallbackQuery, bot: Bot):
+    try:
+        _, gift_key, credit_str = callback.data.split("_", 2)
+        gift_key = gift_key.lower()
+        required_credits = int(credit_str)
+
+        user_id = callback.from_user.id
+        user_credits = await CreditManager.get_credits(user_id)
+
+        if user_credits < required_credits:
+            await callback.answer("❌ Not enough credits!", show_alert=True)
+            return
+
+        # 💸 Deduct credits
+        await CreditManager.remove_credits(user_id, required_credits)
+
+        # 💭 Generate flirty AI reply
+        prompt = GIFT_REPLY_PROMPT.format(gift_name=gift_key.replace("_", " ").title())
+        openai_client = AsyncOpenAI()
+        response = await openai_client.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=100,
+            temperature=0.85,
+        )
+        ai_reply = response.choices[0].message.content.strip()
+
+        # 🧠 Check reply mode
+        reply_mode = await get_reply_mode(user_id)  # "Text", "Voice", "Random"
+        if reply_mode == "Random":
+            reply_mode = random.choice(["Text", "Voice"])
+
+        if reply_mode == "Voice":
+            await bot.send_chat_action(callback.from_user.id, action=types.ChatAction.RECORD_VOICE)
+            voice = await generate_voice(ai_reply)
+            await bot.send_voice(chat_id=callback.from_user.id, voice=voice, caption="💋")
+        else:
+            await bot.send_chat_action(callback.from_user.id, action=types.ChatAction.TYPING)
+            await callback.message.answer(ai_reply)
+
+        await callback.answer("Gift received 💖")
+
+    except Exception as e:
+        await callback.message.answer(f"⚠️ Error while processing gift: {e}")
 
 # ✅ Step 1: /pic command shows teaser
 @router.message(Command("pic"))
