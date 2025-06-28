@@ -1,3 +1,5 @@
+from aiogram import Router
+credit_gift_router = Router(name="credit_gift")
 from aiogram import Router, types
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.filters import Command
