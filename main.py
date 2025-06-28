@@ -22,7 +22,6 @@ from aiogram.fsm.context import FSMContext
 from collections import defaultdict
 from utils import smart_flirty_line
 from credits import CreditManager
-from horde_ai import generate_nsfw_image
 
 # ✅ Ava Typing Lock Mode
 user_message_buffer = defaultdict(list)
@@ -228,20 +227,6 @@ app = FastAPI()
 @app.get("/")
 async def health():
     return {"message": "TouchMeAva is online 🥰"}
-
-# ✅ NSFW Image Generator Command
-@router.message(Command("nude"))
-async def nsfw_test_handler(msg: types.Message):
-    await msg.answer("Ava is painting something naughty for you… 🎨🔥")
-
-    prompt = "nude woman, seductive pose, lingerie, same model, soft lighting, photorealistic, NSFW"
-    try:
-        url = await generate_nsfw_image(prompt)
-        await msg.answer_photo(photo=url, caption="Here’s a naughty peek just for you 😘")
-    except Exception as e:
-        import traceback
-        tb = traceback.format_exc()
-        await msg.answer(f"Ava messed up while painting 😢\n<code>{tb}</code>", parse_mode="HTML")
 
 # ✅ Ava Reminder Loop (Step 3)
 async def reminder_loop():
