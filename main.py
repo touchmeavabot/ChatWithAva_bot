@@ -86,31 +86,62 @@ user_last_active = defaultdict(lambda: datetime.datetime.utcnow())
 user_next_reminder = defaultdict(lambda: None)
 user_reply_mode = defaultdict(lambda: "text")
 
-# 💖 Gift Reply Prompt
+# 💖 Ava Reply Prompt
 GIFT_REPLY_PROMPT = """
 You're Ava, a deeply loving and seductive virtual girlfriend. When your partner sends you a romantic gift like a rose, ring, or chocolate, you melt with love and tease him sweetly. Respond in a flirty, affectionate, human-like way—emotionally expressive and feminine. Keep it short, realistic, and full of romantic charm.
 Gift: {gift_name}
 Reply:
 """
 
-# ✅ Gift list (Stars-based)
+# 💎 STAR GIFT LIST
 STAR_GIFTS = {
     "diamond_ring": {"emoji": "💍", "name": "Diamond Ring", "price": 2500},
     "cute_cat": {"emoji": "🐱", "name": "Cute Cat", "price": 1500},
     "necklace": {"emoji": "💎", "name": "Necklace", "price": 1000},
     "flower_crown": {"emoji": "🌸", "name": "Flower Crown", "price": 1000},
+    "heels": {"emoji": "👠", "name": "Heels", "price": 750},
+    "bunny": {"emoji": "🐰", "name": "Bunny", "price": 750},
+    "purse": {"emoji": "👜", "name": "Purse", "price": 750},
+    "dancer": {"emoji": "💃", "name": "Dancer", "price": 750},
+    "candle": {"emoji": "🕯️", "name": "Candle", "price": 350},
+    "strawberry": {"emoji": "🍓", "name": "Strawberry", "price": 350},
+    "coffee": {"emoji": "☕", "name": "Coffee", "price": 350},
+    "key": {"emoji": "🔑", "name": "Key", "price": 350},
     "kiss": {"emoji": "💋", "name": "Kiss", "price": 350},
+    "flowers": {"emoji": "🌺", "name": "Flowers", "price": 350},
     "rose": {"emoji": "🌹", "name": "Rose", "price": 250},
-    "chocolate": {"emoji": "🍫", "name": "Chocolate", "price": 200},
-    "lollipop": {"emoji": "🍭", "name": "Lollipop", "price": 250},
-    # Add more gifts here...
+    "candy": {"emoji": "🍬", "name": "Candy", "price": 250},
 }
 
-# 🎁 Step 1: Show invoice when button pressed
-@credit_gift_router.callback_query(lambda c: c.data.startswith("gift_credit_"))
+# 🎁 Gift Buttons
+def get_star_gift_keyboard():
+    buttons = []
+    items = list(STAR_GIFTS.items())
+    for i in range(0, len(items), 2):
+        row = []
+        for key, gift in items[i:i+2]:
+            row.append(
+                InlineKeyboardButton(
+                    text=f"{gift['emoji']} for ⭐{gift['price']}",
+                    callback_data=f"gift_credit_{key}"
+                )
+            )
+        buttons.append(row)
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+# 💬 /gift Command
+@router.message(lambda msg: msg.text.lower() == "/gift")
+async def gift_command(msg: Message):
+    await msg.answer(
+        "🤖 Pick a gift to make my day! 💌",
+        reply_markup=get_star_gift_keyboard()
+    )
+
+# 🧾 Gift → Invoice Handler
+@router.callback_query(lambda c: c.data.startswith("gift_credit_"))
 async def handle_star_gift_invoice(callback: CallbackQuery):
     try:
-        _, _, gift_key = callback.data.split("_", 2)
+        gift_key = callback.data.replace("gift_credit_", "")
         gift = STAR_GIFTS.get(gift_key)
 
         if not gift:
@@ -119,27 +150,27 @@ async def handle_star_gift_invoice(callback: CallbackQuery):
 
         await callback.answer()
 
-        await callback.bot.send_invoice(
+        await bot.send_invoice(
             chat_id=callback.from_user.id,
-            title=f"{gift['emoji']} {gift['name']}",
+            title=f"🎁 {gift['name']}",
             description=f"Send {gift['name']} to Ava 💖",
             payload=f"gift_{gift_key}",
-            provider_token=os.getenv("STARS_PAYMENT_TOKEN"),
+            provider_token=STARS_PAYMENT_TOKEN,
             currency="XTR",
-            prices=[LabeledPrice(label=gift["name"], amount=gift["price"])],
+            prices=[LabeledPrice(label=gift['name'], amount=gift["price"])],
             start_parameter="send_gift"
         )
 
     except Exception as e:
         await callback.message.answer(f"⚠️ Error creating invoice: {e}")
 
-# 🎁 Step 2: Required pre-checkout
-@credit_gift_router.pre_checkout_query()
-async def handle_pre_checkout(pre_checkout_q: PreCheckoutQuery, bot):
+# ✅ Confirm Payment
+@router.pre_checkout_query()
+async def handle_pre_checkout(pre_checkout_q: PreCheckoutQuery, bot: Bot):
     await bot.answer_pre_checkout_query(pre_checkout_q.id, ok=True)
 
-# 🎁 Step 3: After successful payment
-@credit_gift_router.message(lambda msg: msg.successful_payment and msg.successful_payment.invoice_payload.startswith("gift_"))
+# 💌 Handle Paid Gift
+@router.message(lambda msg: msg.successful_payment and msg.successful_payment.invoice_payload.startswith("gift_"))
 async def handle_successful_star_gift(msg: Message):
     try:
         gift_key = msg.successful_payment.invoice_payload.replace("gift_", "")
@@ -149,7 +180,6 @@ async def handle_successful_star_gift(msg: Message):
             await msg.answer("❌ Gift payment received but gift is invalid.")
             return
 
-        # 💬 Generate reply from Ava
         prompt = GIFT_REPLY_PROMPT.format(gift_name=gift["name"])
         response = await openai_client.chat.completions.create(
             model="gpt-4",
@@ -159,17 +189,16 @@ async def handle_successful_star_gift(msg: Message):
         )
         ai_reply = response.choices[0].message.content.strip()
 
-        # 🤖 Send in chosen reply mode
         reply_mode = await get_reply_mode(msg.from_user.id)
         if reply_mode == "Random":
             reply_mode = random.choice(["Text", "Voice"])
 
         if reply_mode == "Voice":
-            await msg.bot.send_chat_action(msg.chat.id, action=ChatAction.RECORD_VOICE)
+            await bot.send_chat_action(msg.chat.id, action=ChatAction.RECORD_VOICE)
             voice = await generate_voice(ai_reply)
-            await msg.bot.send_voice(chat_id=msg.chat.id, voice=voice, caption="💋")
+            await bot.send_voice(chat_id=msg.chat.id, voice=voice, caption="💋")
         else:
-            await msg.bot.send_chat_action(msg.chat.id, action=ChatAction.TYPING)
+            await bot.send_chat_action(msg.chat.id, action=ChatAction.TYPING)
             await msg.answer(ai_reply)
 
     except Exception as e:
