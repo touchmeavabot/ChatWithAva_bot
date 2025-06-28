@@ -412,36 +412,34 @@ async def gift_command(msg: types.Message):
 
 
 # ✅ CALLBACK → INVOICE + DEBUG
-@router.callback_query(lambda c: c.data.startswith("gift_"))
-async def process_gift_callback(callback: types.CallbackQuery):
-    await callback.answer("✅ Callback triggered", show_alert=True)  # ✅ debug confirmation
-    print("Callback Data:", callback.data)  # ✅ log the data
-
+@stars_router.callback_query(lambda c: c.data.startswith("star_gift_"))
+async def process_star_gift(callback: types.CallbackQuery, bot: Bot):
     try:
-        # Extract gift key and price safely
-        data = callback.data.replace("gift_", "")
-        parts = data.rsplit("_", 1)  # separate gift from price
-        gift_key = parts[0]
-        price = int(parts[1])
+        gift_data = callback.data.replace("star_gift_", "")
+        gift_key, _ = gift_data.rsplit("_", 1)
+
+        print("Gift Key:", gift_key)
 
         if gift_key not in PRICE_MAPPING:
-            await callback.message.answer("❌ Gift not available.")
+            await callback.answer("This gift is not available right now.")
             return
 
-        # ✅ Send Invoice
+        await callback.answer()
+
         await bot.send_invoice(
             chat_id=callback.from_user.id,
             title=gift_key.replace("_", " ").title(),
-            description="A special gift for Ava 💖",
-            payload=gift_key,
+            description=f"A special gift for Ava 💖",
+            payload=f"{gift_key}",
             provider_token="STARS",
             currency="XTR",
             prices=[PRICE_MAPPING[gift_key]],
             start_parameter="gift",
             is_flexible=False
         )
+
     except Exception as e:
-        await callback.message.answer(f"⚠️ Error while processing gift: {e}")
+        await callback.message.answer(f"Error while processing gift: {e}")
 
 
 # ✅ PAYMENT CONFIRMATION
