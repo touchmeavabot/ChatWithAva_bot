@@ -247,49 +247,71 @@ def clean_prompt(text: str) -> str:
         text = text.replace(word, replacement)
     return text.strip()
 
-# ✅ NSFW Command to charge 50 credits and send pic
+# ✅ Store prompt temporarily (per-user)
+user_nude_prompt = {}
+
+# ✅ NSFW /nude command — only shows teaser with unlock button
 @router.message(Command("nude"))
 async def nsfw_paid_handler(msg: types.Message):
     user_id = msg.from_user.id
 
-    # 💸 Check balance
+    # 🧠 Clean & store user prompt
+    user_input = clean_prompt(msg.text.replace("/nude", "").strip())
+    user_nude_prompt[user_id] = user_input
+
+    # 🔐 Send teaser with unlock button
+    kb = types.InlineKeyboardMarkup(inline_keyboard=[
+        [types.InlineKeyboardButton(text="🔓 Unlock Photo (50 Credits)", callback_data="unlock_nude")]
+    ])
+    await msg.answer_photo(
+        photo=types.FSInputFile("blurred_teaser.jpg"),  # ✅ Replace with your own blurred image path
+        caption="Hehe… this naughty peek is locked. Wanna see what Ava is hiding? 😘",
+        reply_markup=kb
+    )
+
+# ✅ Callback handler to unlock NSFW Ava image after credit check
+@router.callback_query(lambda c: c.data == "unlock_nude")
+async def unlock_nude_callback(callback: types.CallbackQuery):
+    user_id = callback.from_user.id
+
+    # 💳 Check balance
     balance = await credit_manager.get_credits(user_id)
     if balance < 50:
-        await msg.answer("❌ You need at least 50 Ava Credits to unlock a sexy photo.\nUse /credits to top up 💳")
+        await callback.answer("❌ Not enough Ava Credits (50 needed)", show_alert=True)
         return
 
-    await msg.answer("Hehe... you’re naughty 😘 Let me paint something hot for you…")
-
-    # Send blurred teaser
-    teaser = types.FSInputFile("blurred_teaser.jpg")  # Replace with your real teaser path
-    await msg.answer_photo(photo=teaser, caption="👀 Tap to unlock this naughty peek...")
-
-    # 🧠 Clean user input
-    user_input = clean_prompt(msg.text.replace("/nude", "").strip())
+    await callback.answer("Painting something sexy for you… 🎨", show_alert=False)
 
     # 🖼️ Final prompt
-    base_ava_prompt = (
+    base_prompt = (
         "24-year-old seductive woman named Ava, long silky brown hair, soft green eyes, smooth flawless skin, "
         "fit slim waist, juicy curves, large natural perky breasts, soft pink lips, teasing smile, "
         "in pink lacy lingerie, bedroom lighting, erotic, suggestive pose, ultra detailed, photorealistic, 4K"
     )
-    final_prompt = f"{base_ava_prompt}, {user_input}" if user_input else base_ava_prompt
+    user_input = user_nude_prompt.get(user_id, "")
+    final_prompt = f"{base_prompt}, {user_input}" if user_input else base_prompt
 
     try:
-        # 🔥 Generate NSFW image
+        # 🔥 Generate image
         url = await generate_nsfw_image(final_prompt)
 
-        # 💳 Deduct credits AFTER generation
+        # 💳 Deduct after success
         await credit_manager.deduct_credits(user_id, 50)
 
-        # 📸 Send final image
-        await msg.answer_photo(photo=url, caption="Here’s your naughty surprise 😘")
+        # 📸 Send photo
+        await callback.message.answer_photo(photo=url, caption="Here’s your naughty surprise 😘")
+
+        # 🧼 Clear stored prompt
+        user_nude_prompt.pop(user_id, None)
 
     except Exception as e:
         import traceback
         tb = traceback.format_exc()
         safe_tb = tb.replace("<", "&lt;").replace(">", "&gt;")
-        await msg.answer(f"Ava messed up while painting 😢\n<code>{safe_tb}</code>", parse_mode="HTML")
+        await callback.message.answer(
+            f"Ava messed up while painting 😢\n<code>{safe_tb}</code>",
+            parse_mode="HTML"
+        )
 # ✅ Ava Reminder Loop (Step 3)
 async def reminder_loop():
     while True:
