@@ -264,11 +264,10 @@ async def nsfw_paid_handler(msg: types.Message):
         [types.InlineKeyboardButton(text="🔓 Unlock Photo (50 Credits)", callback_data="unlock_nude")]
     ])
     await msg.answer_photo(
-        photo=types.FSInputFile("blurred_teaser.jpg"),  # ✅ Replace with your own blurred image path
-        caption="Hehe… this naughty peek is locked. Wanna see what Ava is hiding? 😘",
-        reply_markup=kb
-    )
-
+    photo="https://i.postimg.cc/8ktyb7yL/IMG-1515.png",  # ✅ Direct URL — no FSInputFile
+    caption="Hehe… this naughty peek is locked. Wanna see what Ava is hiding? 😘",
+    reply_markup=kb
+)
 # ✅ Callback handler to unlock NSFW Ava image after credit check
 @router.callback_query(lambda c: c.data == "unlock_nude")
 async def unlock_nude_callback(callback: types.CallbackQuery):
