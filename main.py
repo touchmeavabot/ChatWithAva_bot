@@ -39,6 +39,7 @@ from credits import CreditManager
 from openai import AsyncOpenAI
 from reply_mode_manager import get_reply_mode  # ✅ NEW, must be added
 
+
 # 🚫 Blocked words and safe replacements
 BLOCKED_WORDS = {
     "baby": "honey",
@@ -84,7 +85,6 @@ bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.HTML)
 dp = Dispatcher(storage=MemoryStorage())
 
 # ✅ Include your routers in correct order
-dp.include_router(router)           # Your main handler (must come first)
 dp.include_router(stars_router)    # For Stars system
 dp.include_router(credit_gift_router)  # ✅ Don't forget to add this one too!
 
