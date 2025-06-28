@@ -93,19 +93,22 @@ async def nsfw_paid_handler(msg: types.Message):
 async def unlock_nude_callback(callback: CallbackQuery):
     user_id = callback.from_user.id
 
-   # ✅ Check credit balance
     balance = await credit_manager.get_credits(user_id)
     if balance < 50:
         await callback.answer("❌ Not enough Ava Credits (50 needed)", show_alert=True)
         return
 
-    await callback.answer("Opening your surprise… 👀", show_alert=False)
+    await callback.answer("Opening the photo for you… 😏")
 
-    # Step 1: Show a "Loading" effect
+    # Update caption to show "opening..."
     try:
-        await callback.message.edit_caption("Painting something sexy for you… 🎨")
+        await callback.message.edit_caption("🔓 Opening the photo… wait a sec 😘")
     except:
-        pass  # Avoid crashing if caption can't be edited (e.g. missing perms)
+        pass  # Just in case editing fails
+
+    # Simulate upload
+    await bot.send_chat_action(callback.message.chat.id, action="upload_photo")
+    await asyncio.sleep(2)
 
     # Final prompt
     base_prompt = (
@@ -117,25 +120,20 @@ async def unlock_nude_callback(callback: CallbackQuery):
     final_prompt = f"{base_prompt}, {user_input}" if user_input else base_prompt
 
     try:
+        # Generate image
         url = await generate_nsfw_image(final_prompt)
-        await credit_manager.deduct_credits(user_id, 50)
 
-        # Delete teaser
-        try:
-            await callback.message.delete()
-        except:
-            pass
+        # Deduct credits
+        await credit_manager.add_credits(user_id, -50)
 
-        # Send final result
-        await callback.message.answer_photo(
-            photo=url,
-            caption="Here’s your naughty surprise 😘"
-        )
+        # Replace the teaser photo with real one
+        new_media = types.InputMediaPhoto(media=url, caption="Here’s your naughty surprise 😘")
+        await callback.message.edit_media(media=new_media)
 
+        # Clear prompt
         user_nude_prompt.pop(user_id, None)
 
     except Exception as e:
-        import traceback
         tb = traceback.format_exc()
         safe_tb = tb.replace("<", "&lt;").replace(">", "&gt;")
         await callback.message.answer(
