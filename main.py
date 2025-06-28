@@ -37,7 +37,6 @@ from reply_mode_manager import get_reply_mode
 from tg_gift_handler import credit_gift_router
 
 # ✅ Routers
-from stars_gift_handler import stars_router
 from tg_gift_handler import credit_gift_router
 
 # ✅ ENV
@@ -56,7 +55,6 @@ dp = Dispatcher(storage=MemoryStorage())
 router = Router()
 
 # ✅ Attach routers (Order matters)
-dp.include_router(stars_router)       # ⭐ Telegram Stars gifts
 dp.include_router(credit_gift_router) # 💖 Credit gift system
 dp.include_router(router)              # 🔥 Global commands
 
