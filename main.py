@@ -35,6 +35,9 @@ from credits import CreditManager
 from promptchan_ai import generate_nsfw_image
 from reply_mode_manager import get_reply_mode
 from tg_gift_handler import credit_gift_router
+from memory_manager import MemoryManager
+
+memory_manager = MemoryManager()
 
 # ✅ Routers
 from tg_gift_handler import credit_gift_router
@@ -306,6 +309,7 @@ app = FastAPI()
 @app.on_event("startup")
 async def on_startup():
     await credit_manager.connect()
+    await memory_manager.connect()
     # ❌ REMOVE webhook setup to avoid Telegram flood error
     # await asyncio.sleep(2)
     # await bot.set_webhook(WEBHOOK_URL)
@@ -387,6 +391,46 @@ async def reply_mode_cmd(msg: types.Message):
         ]
     ])
     await msg.answer("How should Ava reply to you? Choose your preference:", reply_markup=kb)
+    # 💬 Memory-Based Free Chat Handler
+@router.message()
+async def handle_memory_message(message: Message):
+    user_id = message.from_user.id
+    text = message.text
+
+    # 1️⃣ Load user memory from database
+    memory = await memory_manager.get_memory(user_id)
+
+    # 2️⃣ Detect and store "my name is" input
+    if "my name is" in text.lower():
+        name = text.split("my name is")[-1].strip().split()[0]
+        memory["name"] = name
+        await memory_manager.save_memory(user_id, memory)
+        await message.answer(f"Aww {name}, that's such a lovely name! ❤️")
+        return
+
+    # 3️⃣ Detect and store "i live in" input
+    if "i live in" in text.lower():
+        place = text.split("i live in")[-1].strip().split()[0]
+        memory["location"] = place
+        await memory_manager.save_memory(user_id, memory)
+        await message.answer(f"Oohh {place}? I wish I was there with you 😚")
+        return
+
+    # 4️⃣ If user asks "do you remember me"
+    if "do you remember me" in text.lower():
+        if memory.get("name"):
+            await message.answer(f"Of course, {memory['name']}! How could I forget my favorite person? 💋")
+        else:
+            await message.answer("I do! But tell me again... what's your name, love? 🥺")
+        return
+
+    # 5️⃣ Default fallback message using name if remembered
+    reply = "Mmm tell me more about you, baby..."  # Default
+
+    if memory.get("name"):
+        reply = f"{memory['name']} 😘 you're always on my mind..."
+
+    await message.answer(reply)
 
 # ✅ Unified Callback Handler for Credits + ReplyMode
 @router.callback_query(lambda c: True)
