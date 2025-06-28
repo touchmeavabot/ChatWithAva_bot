@@ -93,6 +93,7 @@ async def nsfw_paid_handler(msg: types.Message):
 async def unlock_nude_callback(callback: CallbackQuery):
     user_id = callback.from_user.id
 
+    # Check credits
     balance = await credit_manager.get_credits(user_id)
     if balance < 50:
         await callback.answer("❌ Not enough Ava Credits (50 needed)", show_alert=True)
@@ -101,17 +102,16 @@ async def unlock_nude_callback(callback: CallbackQuery):
     await callback.answer("Opening the photo for you… 😏")
 
     try:
-        # ✅ Step 1: Edit the existing blurred photo’s caption
+        # ✅ Step 1: Edit the blurred image's caption
         await callback.message.edit_caption("🔓 Opening the photo… wait a sec 😘")
+        await asyncio.sleep(0.6)  # Enough delay for Telegram to update UI
 
-        # ✅ Step 2: Wait just enough for Telegram to render the caption
-        await asyncio.sleep(0.7)
-
-        # ✅ Step 3: Show upload animation
+        # ✅ Step 2: Show typing animation
         await bot.send_chat_action(callback.message.chat.id, action="upload_photo")
     except:
         pass
 
+    # Build prompt
     base_prompt = (
         "24-year-old seductive woman named Ava, long silky brown hair, soft green eyes, smooth flawless skin, "
         "fit slim waist, juicy curves, large natural perky breasts, soft pink lips, teasing smile, "
@@ -121,16 +121,17 @@ async def unlock_nude_callback(callback: CallbackQuery):
     final_prompt = f"{base_prompt}, {user_input}" if user_input else base_prompt
 
     try:
+        # ✅ Step 3: Generate image
         url = await generate_nsfw_image(final_prompt)
 
         # ✅ Step 4: Deduct credits
         await credit_manager.add_credits(user_id, -50)
 
-        # ✅ Step 5: Replace the old blurred photo with the new image
+        # ✅ Step 5: Replace image and update caption
         new_media = types.InputMediaPhoto(media=url, caption="Here’s your naughty surprise 😘")
         await callback.message.edit_media(media=new_media)
 
-        # ✅ Step 6: Clear prompt
+        # ✅ Step 6: Clear stored prompt
         user_nude_prompt.pop(user_id, None)
 
     except Exception as e:
