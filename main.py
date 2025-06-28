@@ -56,9 +56,9 @@ dp = Dispatcher(storage=MemoryStorage())
 router = Router()
 
 # ✅ Attach routers (Order matters)
-dp.include_router(router)              # 🔥 Global commands
 dp.include_router(stars_router)       # ⭐ Telegram Stars gifts
 dp.include_router(credit_gift_router) # 💖 Credit gift system
+dp.include_router(router)              # 🔥 Global commands
 
 # ✅ Async OpenAI Client
 openai_client = AsyncOpenAI()
