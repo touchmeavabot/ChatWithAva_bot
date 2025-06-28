@@ -102,9 +102,10 @@ async def unlock_nude_callback(callback: CallbackQuery):
 
     # Update caption to show "opening..."
     try:
-        await callback.message.edit_caption("🔓 Opening the photo… wait a sec 😘")
+    await callback.message.edit_caption("🔓 Opening the photo… wait a sec 😘")
+    await asyncio.sleep(1.1)  # 👈 Just enough to register the caption change
     except:
-        pass  # Just in case editing fails
+    pass  # Just in case editing fails
 
     # Simulate upload
     await bot.send_chat_action(callback.message.chat.id, action="upload_photo")
