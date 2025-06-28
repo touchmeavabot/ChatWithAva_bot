@@ -230,16 +230,16 @@ app = FastAPI()
 async def health():
     return {"message": "TouchMeAva is online 🥰"}
 
-# ✅ Block unsafe terms to avoid Promptchan 500 errors
+# 🚫 Blocked words and safe replacements
 BLOCKED_WORDS = {
     "baby": "honey",
     "teen": "young adult",
     "girl": "woman",
     "school": "private room",
     "daddy": "lover",
-    "child": "",  # remove
+    "child": "",
     "little": "",
-    "daughter": "",  # remove
+    "daughter": "",
 }
 
 def clean_prompt(text: str) -> str:
@@ -247,28 +247,46 @@ def clean_prompt(text: str) -> str:
         text = text.replace(word, replacement)
     return text.strip()
 
-# ✅ NSFW Command to generate Ava nude photo
-@router.message(Command("nude"))  # ✅ Using router, not dp
-async def nsfw_test_handler(msg: types.Message):
-    await msg.answer("Ava is painting something naughty for you… 🎨🔥")
+# ✅ NSFW Command to charge 50 credits and send pic
+@router.message(Command("nude"))
+async def nsfw_paid_handler(msg: types.Message):
+    user_id = msg.from_user.id
 
-    # 👩 Ava's default safe-sexy look
+    # 💸 Check balance
+    balance = await credit_manager.get_credits(user_id)
+    if balance < 50:
+        await msg.answer("❌ You need at least 50 Ava Credits to unlock a sexy photo.\nUse /credits to top up 💳")
+        return
+
+    await msg.answer("Hehe... you’re naughty 😘 Let me paint something hot for you…")
+
+    # Send blurred teaser
+    teaser = types.FSInputFile("blurred_teaser.jpg")  # Replace with your real teaser path
+    await msg.answer_photo(photo=teaser, caption="👀 Tap to unlock this naughty peek...")
+
+    # 🧠 Clean user input
+    user_input = clean_prompt(msg.text.replace("/nude", "").strip())
+
+    # 🖼️ Final prompt
     base_ava_prompt = (
         "24-year-old seductive woman named Ava, long silky brown hair, soft green eyes, smooth flawless skin, "
         "fit slim waist, juicy curves, large natural perky breasts, soft pink lips, teasing smile, "
         "in pink lacy lingerie, bedroom lighting, erotic, suggestive pose, ultra detailed, photorealistic, 4K"
     )
-
-    # 🧠 Sanitize user input
-    user_input = clean_prompt(msg.text.replace("/nude", "").strip())
-
-    # ✨ Final prompt
     final_prompt = f"{base_ava_prompt}, {user_input}" if user_input else base_ava_prompt
 
     try:
+        # 🔥 Generate NSFW image
         url = await generate_nsfw_image(final_prompt)
-        await msg.answer_photo(photo=url, caption="Here’s a naughty peek just for you 😘")
+
+        # 💳 Deduct credits AFTER generation
+        await credit_manager.deduct_credits(user_id, 50)
+
+        # 📸 Send final image
+        await msg.answer_photo(photo=url, caption="Here’s your naughty surprise 😘")
+
     except Exception as e:
+        import traceback
         tb = traceback.format_exc()
         safe_tb = tb.replace("<", "&lt;").replace(">", "&gt;")
         await msg.answer(f"Ava messed up while painting 😢\n<code>{safe_tb}</code>", parse_mode="HTML")
