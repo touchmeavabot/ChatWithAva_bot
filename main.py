@@ -86,7 +86,92 @@ user_last_active = defaultdict(lambda: datetime.datetime.utcnow())
 user_next_reminder = defaultdict(lambda: None)
 user_reply_mode = defaultdict(lambda: "text")
 
+# 💖 Gift Reply Prompt
+GIFT_REPLY_PROMPT = """
+You're Ava, a deeply loving and seductive virtual girlfriend. When your partner sends you a romantic gift like a rose, ring, or chocolate, you melt with love and tease him sweetly. Respond in a flirty, affectionate, human-like way—emotionally expressive and feminine. Keep it short, realistic, and full of romantic charm.
+Gift: {gift_name}
+Reply:
+"""
 
+# ✅ Gift list (Stars-based)
+STAR_GIFTS = {
+    "diamond_ring": {"emoji": "💍", "name": "Diamond Ring", "price": 2500},
+    "cute_cat": {"emoji": "🐱", "name": "Cute Cat", "price": 1500},
+    "necklace": {"emoji": "💎", "name": "Necklace", "price": 1000},
+    "flower_crown": {"emoji": "🌸", "name": "Flower Crown", "price": 1000},
+    "kiss": {"emoji": "💋", "name": "Kiss", "price": 350},
+    "rose": {"emoji": "🌹", "name": "Rose", "price": 250},
+    # Add more if needed...
+}
+
+# 🔘 Callback handler for gift button → invoice
+@credit_gift_router.callback_query(lambda c: c.data.startswith("gift_credit_"))
+async def handle_star_gift_invoice(callback: CallbackQuery):
+    try:
+        _, _, gift_key = callback.data.split("_", 2)
+        gift = STAR_GIFTS.get(gift_key)
+
+        if not gift:
+            await callback.answer("❌ Invalid gift!", show_alert=True)
+            return
+
+        await callback.answer()
+
+        await bot.send_invoice(
+            chat_id=callback.from_user.id,
+            title=f"🎁 {gift['name']}",
+            description=f"Send {gift['name']} to Ava 💖",
+            payload=f"gift_{gift_key}",
+            provider_token=os.getenv("STARS_PAYMENT_TOKEN"),
+            currency="XTR",  # ✅ Not USD
+            prices=[LabeledPrice(label=f"{gift['name']}", amount=gift["price"])],
+            start_parameter="send_gift"
+        )
+
+    except Exception as e:
+        await callback.message.answer(f"⚠️ Error creating invoice: {e}")
+
+# ✅ Required by Telegram for Stars payment
+@credit_gift_router.pre_checkout_query()
+async def handle_pre_checkout(pre_checkout_q: PreCheckoutQuery, bot: Bot):
+    await bot.answer_pre_checkout_query(pre_checkout_q.id, ok=True)
+
+# ✅ After successful gift payment
+@credit_gift_router.message(lambda msg: msg.successful_payment and msg.successful_payment.invoice_payload.startswith("gift_"))
+async def handle_successful_star_gift(msg: Message):
+    try:
+        gift_key = msg.successful_payment.invoice_payload.replace("gift_", "")
+        gift = STAR_GIFTS.get(gift_key)
+
+        if not gift:
+            await msg.answer("❌ Gift payment received but gift is invalid.")
+            return
+
+        # 🎀 Generate Ava reply
+        prompt = GIFT_REPLY_PROMPT.format(gift_name=gift["name"])
+        response = await openai_client.chat.completions.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=100,
+            temperature=0.85,
+        )
+        ai_reply = response.choices[0].message.content.strip()
+
+        # 💬 Send reply based on mode
+        reply_mode = await get_reply_mode(msg.from_user.id)
+        if reply_mode == "Random":
+            reply_mode = random.choice(["Text", "Voice"])
+
+        if reply_mode == "Voice":
+            await bot.send_chat_action(msg.chat.id, action=ChatAction.RECORD_VOICE)
+            voice = await generate_voice(ai_reply)
+            await bot.send_voice(chat_id=msg.chat.id, voice=voice, caption="💋")
+        else:
+            await bot.send_chat_action(msg.chat.id, action=ChatAction.TYPING)
+            await msg.answer(ai_reply)
+
+    except Exception as e:
+        await msg.answer(f"⚠️ Error sending Ava’s reply: {e}")
 
 # ✅ Step 1: /pic command shows teaser
 @dp.message(Command("pic"))
