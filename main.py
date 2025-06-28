@@ -130,7 +130,7 @@ def get_star_gift_keyboard():
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 # 💬 /gift Command
-@router.message(lambda msg: msg.text.lower() == "/gift")
+@router.message(lambda msg: msg.text and msg.text.lower() == "/gift")
 async def gift_command(msg: Message):
     await msg.answer(
         "🤖 Pick a gift to make my day! 💌",
