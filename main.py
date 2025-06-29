@@ -608,8 +608,8 @@ async def chat_handler(msg: types.Message):
                     await msg.answer(f"Ava couldn’t react to the photo 😔 (Error: {e})")
                     return
 
-                    # 🎤 Handle voice message with Whisper
-        elif msg.voice:
+        # 🎤 Handle voice message with Whisper
+          elif msg.voice:
             try:
                 file_id = msg.voice.file_id
                 file = await bot.get_file(file_id)
