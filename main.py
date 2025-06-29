@@ -669,7 +669,7 @@ async def chat_handler(msg: types.Message):
             # ✅ STEP 3: Auto-Detect Memory Triggers
                 text = full_message.lower()
                 
-                if "my name is" in text:
+            if "my name is" in text:
                 name = full_message.split("my name is")[-1].strip().split()[0]
                 memory["name"] = name
                 
