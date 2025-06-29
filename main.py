@@ -57,7 +57,8 @@ Return a JSON like:
   "name": "optional name",
   "mood": "optional emotion",
   "location": "optional place",
-  "confession": "optional confession"
+  "confession": "optional confession",
+  "nsfw_tags": ["optional list of kinks, roleplay terms, or fetishes like 'mommy', 'good boy', 'choke me', 'submissive', 'dom', 'daddy', etc."]
 }}
 
 Only include fields that are clearly present in the message.
