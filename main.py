@@ -668,25 +668,51 @@ async def chat_handler(msg: types.Message):
 
                 # ✅ STEP 3: Auto-Detect Memory Triggers
                 text = full_message.lower()
-                if "my name is" in text:
-                    memory["name"] = full_message.split("my name is")[-1].strip().split()[0]
+                # ✅ Trigger: Name
+                if any(phrase in text for phrase in ["my name is", "i am called", "you can call me", "they call me"]):
+                    for phrase in ["my name is", "i am called", "you can call me", "they call me"]:
+                        if phrase in text:
+                            memory["name"] = full_message.split(phrase)[-1].strip().split()[0]
+                            break
                 
-                elif "i live in" in text:
-                    memory["location"] = full_message.split("i live in")[-1].strip().split()[0]
+                # ✅ Trigger: Location
+                elif any(phrase in text for phrase in ["i live in", "i'm from", "i am from", "my city is", "my town is", "i stay in"]):
+                    for phrase in ["i live in", "i'm from", "i am from", "my city is", "my town is", "i stay in"]:
+                        if phrase in text:
+                            memory["location"] = full_message.split(phrase)[-1].strip().split()[0]
+                            break
                 
-                elif "i feel" in text or "i'm feeling" in text:
-                    split_on = "i feel" if "i feel" in text else "i'm feeling"
-                    mood = full_message.split(split_on)[-1].strip().split('.')[0]
-                    memory["mood"] = mood
+                # ✅ Trigger: Mood
+                elif any(trigger in text for trigger in [
+                    "i am", "i'm", "im", "i m", "i sm",
+                    "i feel", "i'm feeling", "i feel like", "i’m feeling like",
+                    "i’ve been feeling", "i was feeling", "i’m getting", "i’m becoming",
+                    "i’m starting to feel", "i feel so", "i fell", "i’m kinda", "i'm sort of", "i feel kinda"
+                ]):
+                    for trigger in [
+                        "i am", "i'm", "im", "i m", "i sm",
+                        "i feel", "i'm feeling", "i feel like", "i’m feeling like",
+                        "i’ve been feeling", "i was feeling", "i’m getting", "i’m becoming",
+                        "i’m starting to feel", "i feel so", "i fell", "i’m kinda", "i'm sort of", "i feel kinda"
+                    ]:
+                        if trigger in text:
+                            mood_text = full_message.split(trigger)[-1].strip().split('.')[0]
+                            memory["mood"] = mood_text
+                            break
                 
-                elif "i am" in text or "i'm" in text:
-                    split_on = "i am" if "i am" in text else "i'm"
-                    possible_mood = full_message.split(split_on)[-1].strip().split('.')[0]
-                    if any(word in possible_mood for word in ["sad", "happy", "horny", "angry", "tired", "lonely"]):
-                        memory["mood"] = possible_mood
-                
-                elif "i want to confess" in text:
-                    memory["confession"] = full_message.split("i want to confess")[-1].strip()
+                # ✅ Trigger: Confession
+                elif any(trigger in text for trigger in [
+                    "i want to confess", "i need to tell you something", "can i tell you something",
+                    "i have a confession", "i wanna say something", "i gotta say this", "can i admit something"
+                ]):
+                    for trigger in [
+                        "i want to confess", "i need to tell you something", "can i tell you something",
+                        "i have a confession", "i wanna say something", "i gotta say this", "can i admit something"
+                    ]:
+                        if trigger in text:
+                            confession = full_message.split(trigger)[-1].strip()
+                            memory["confession"] = confession
+                            break
 
                 # ✅ STEP 4: Save Last Topic or Mood
                 memory["last_topic"] = full_message[:50]
