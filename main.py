@@ -39,6 +39,45 @@ from memory_manager import MemoryManager
 
 memory_manager = MemoryManager()
 
+# 🧠 Import required modules
+import json
+from openai import AsyncOpenAI
+
+# 🧠 AI-powered memory extractor function
+async def detect_memory_fields(full_message: str) -> dict:
+    # 🔑 Initialize OpenAI client with your API key
+    client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+    # 📝 Prompt to ask AI to extract memory fields from message
+    prompt = f"""
+You are an AI memory detector. Extract any memory data from the message below.
+
+Return a JSON like:
+{{
+  "name": "optional name",
+  "mood": "optional emotion",
+  "location": "optional place",
+  "confession": "optional confession"
+}}
+
+Only include fields that are clearly present in the message.
+Message: \"{full_message}\"
+"""
+
+    # 🤖 Call OpenAI API to process the prompt
+    response = await client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.2
+    )
+
+    # 🧪 Try parsing the JSON result from the AI response
+    try:
+        return json.loads(response.choices[0].message.content)
+    except:
+        # ⚠️ In case of error, return empty memory
+        return {}
+        
 # ✅ Routers
 from tg_gift_handler import credit_gift_router
 
@@ -659,62 +698,19 @@ async def chat_handler(msg: types.Message):
                         await msg.answer("Ava couldn't understand your voice baby 🥺 maybe try again?")
                     return
 
-                        # ✍️ Handle text (or transcribed voice)
+            # ✍️ Handle text (or transcribed voice)
             if msg.text:
                 full_message = msg.text.strip()
                 user_message_buffer[user_id].append(full_message)
                 messages = "\n".join(user_message_buffer[user_id])
                 user_message_buffer[user_id] = []
-
-                # ✅ STEP 3: Auto-Detect Memory Triggers
-                text = full_message.lower()
-                # ✅ Trigger: Name
-                if any(phrase in text for phrase in ["my name is", "i am called", "you can call me", "they call me"]):
-                    for phrase in ["my name is", "i am called", "you can call me", "they call me"]:
-                        if phrase in text:
-                            memory["name"] = full_message.split(phrase)[-1].strip().split()[0]
-                            break
-                
-                # ✅ Trigger: Location
-                elif any(phrase in text for phrase in ["i live in", "i'm from", "i am from", "my city is", "my town is", "i stay in"]):
-                    for phrase in ["i live in", "i'm from", "i am from", "my city is", "my town is", "i stay in"]:
-                        if phrase in text:
-                            memory["location"] = full_message.split(phrase)[-1].strip().split()[0]
-                            break
-                
-                # ✅ Trigger: Mood
-                elif any(trigger in text for trigger in [
-                    "i am", "i'm", "im", "i m", "i sm",
-                    "i feel", "i'm feeling", "i feel like", "i’m feeling like",
-                    "i’ve been feeling", "i was feeling", "i’m getting", "i’m becoming",
-                    "i’m starting to feel", "i feel so", "i fell", "i’m kinda", "i'm sort of", "i feel kinda"
-                ]):
-                    for trigger in [
-                        "i am", "i'm", "im", "i m", "i sm",
-                        "i feel", "i'm feeling", "i feel like", "i’m feeling like",
-                        "i’ve been feeling", "i was feeling", "i’m getting", "i’m becoming",
-                        "i’m starting to feel", "i feel so", "i fell", "i’m kinda", "i'm sort of", "i feel kinda"
-                    ]:
-                        if trigger in text:
-                            mood_text = full_message.split(trigger)[-1].strip().split('.')[0]
-                            memory["mood"] = mood_text
-                            break
-                
-                # ✅ Trigger: Confession
-                elif any(trigger in text for trigger in [
-                    "i want to confess", "i need to tell you something", "can i tell you something",
-                    "i have a confession", "i wanna say something", "i gotta say this", "can i admit something"
-                ]):
-                    for trigger in [
-                        "i want to confess", "i need to tell you something", "can i tell you something",
-                        "i have a confession", "i wanna say something", "i gotta say this", "can i admit something"
-                    ]:
-                        if trigger in text:
-                            confession = full_message.split(trigger)[-1].strip()
-                            memory["confession"] = confession
-                            break
-
-                # ✅ STEP 4: Save Last Topic or Mood
+            
+                # 🧠 Detect memory using AI
+                memory_updates = await detect_memory_fields(full_message)
+                if memory_updates:
+                    memory.update(memory_updates)
+            
+                # ✅ Save last topic
                 memory["last_topic"] = full_message[:50]
                 await memory_manager.save_memory(user_id, memory)
 
