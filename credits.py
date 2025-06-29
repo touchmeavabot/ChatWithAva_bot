@@ -2,9 +2,9 @@ import asyncpg
 import datetime
 import os
 
-WELCOME_CREDITS = 50  # 🔄 Changed from 300 → 50 for testing
+WELCOME_CREDITS = 50  # ✅ For testing, reduce initial credits
 REFILL_AMOUNT = 100
-REFILL_INTERVAL = 12 * 60 * 60  # 12 hours (in seconds)
+REFILL_INTERVAL = 12 * 60 * 60  # 12 hours in seconds
 
 class CreditManager:
     def __init__(self):
@@ -49,8 +49,7 @@ class CreditManager:
         async with self.pool.acquire() as conn:
             await conn.execute(
                 "UPDATE user_credits SET credits = credits - $1 WHERE user_id = $2 AND credits >= $1",
-                amount,
-                user_id
+                amount, user_id
             )
 
     async def refill_if_due(self, user_id: int):
@@ -61,7 +60,7 @@ class CreditManager:
 
             now = datetime.datetime.utcnow()
 
-            # ➤ First time user — create new row with 50 welcome credits
+            # 🆕 New user — insert fresh record with WELCOME_CREDITS
             if row is None:
                 await conn.execute(
                     "INSERT INTO user_credits (user_id, credits, last_refill, initial_bonus_given) VALUES ($1, $2, $3, TRUE)",
@@ -75,11 +74,11 @@ class CreditManager:
 
             print(f"📋 User {user_id} — Credits: {credits}, Bonus Given: {initial_bonus_given} ({type(initial_bonus_given)})")
 
-            # ➤ Already has credits, don’t give anything
+            # 🟡 Still has credits — skip refill
             if credits > 0:
                 return None
 
-            # ➤ Already got the welcome bonus — only allow 12h refill
+            # 🟢 Refill logic if eligible
             if initial_bonus_given:
                 time_since = (now - last_refill).total_seconds()
                 if time_since >= REFILL_INTERVAL:
@@ -91,7 +90,7 @@ class CreditManager:
                 else:
                     return None
 
-            # 🔁 Edge case fallback: somehow has 0 credits and bonus = false
+            # 🛑 Fallback: Somehow bonus was not marked but user exists
             await conn.execute(
                 "UPDATE user_credits SET credits = $1, last_refill = $2, initial_bonus_given = TRUE WHERE user_id = $3",
                 WELCOME_CREDITS, now, user_id
