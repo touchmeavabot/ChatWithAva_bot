@@ -2,9 +2,9 @@ import asyncpg
 import datetime
 import os
 
-WELCOME_CREDITS = 50
-REFILL_AMOUNT = 100
-REFILL_INTERVAL = 12 * 60 * 60  # 12 hours in seconds
+WELCOME_CREDITS = 300           # New user bonus
+REFILL_AMOUNT = 100             # Daily refill
+# We no longer use REFILL_INTERVAL — day-based refill
 
 class CreditManager:
     def __init__(self):
@@ -35,9 +35,10 @@ class CreditManager:
                     amount, user_id
                 )
             else:
+                today = datetime.date.today()
                 await conn.execute(
                     "INSERT INTO user_credits (user_id, credits, last_refill, initial_bonus_given) VALUES ($1, $2, $3, TRUE)",
-                    user_id, amount, datetime.datetime.utcnow()
+                    user_id, amount, today
                 )
 
     async def charge_credits(self, user_id: int, amount: int) -> bool:
@@ -64,35 +65,30 @@ class CreditManager:
                 "SELECT credits, last_refill FROM user_credits WHERE user_id = $1", user_id
             )
 
-            now = datetime.datetime.utcnow()
+            today = datetime.date.today()
 
-            # ✅ New user — give welcome credits
+            # ✅ New user — insert with welcome bonus
             if not row:
                 await conn.execute(
                     "INSERT INTO user_credits (user_id, credits, last_refill, initial_bonus_given) VALUES ($1, $2, $3, TRUE)",
-                    user_id, WELCOME_CREDITS, now
+                    user_id, WELCOME_CREDITS, today
                 )
                 return f"🎉 Welcome! You've received {WELCOME_CREDITS} credits to start chatting. Enjoy 😉"
 
             credits = row["credits"]
             last_refill = row["last_refill"]
 
-            # 🔧 Ensure datetime object
-            if isinstance(last_refill, datetime.date) and not isinstance(last_refill, datetime.datetime):
-                last_refill = datetime.datetime.combine(last_refill, datetime.datetime.min.time())
-
-            # 🚫 Already has credits — no refill
+            # ✅ No refill if user still has credits
             if credits > 0:
                 return None
 
-            # 🔒 Prevent refill if less than 12h has passed
-            elapsed_seconds = (now - last_refill).total_seconds()
-            if elapsed_seconds < REFILL_INTERVAL:
-                return None  # ❌ Not enough time passed
+            # ❌ Already refilled today
+            if last_refill == today:
+                return None
 
-            # ✅ Time-based refill (12h after hitting 0)
+            # ✅ Give refill
             await conn.execute(
                 "UPDATE user_credits SET credits = $1, last_refill = $2 WHERE user_id = $3",
-                REFILL_AMOUNT, now, user_id
+                REFILL_AMOUNT, today, user_id
             )
             return f"💖 You've received {REFILL_AMOUNT} free credits! Welcome back 😘"
