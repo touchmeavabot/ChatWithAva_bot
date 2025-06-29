@@ -644,13 +644,25 @@ async def chat_handler(msg: types.Message):
 
                 selected_mode = random.choice(["text", "voice"]) if reply_mode == "random" else reply_mode
 
-                # ✅ Use memory in the prompt, not static message
+           # ⏳ Load memory
                 memory = await memory_manager.get_memory(user_id)
-                memory_context = ""
+
+           # 🧠 Build memory string for AI prompt
+                    memory_string = ""
                 if memory.get("name"):
-                    memory_context += f"His name is {memory['name']}. "
+                    memory_string += f"His name is {memory['name']}. "
                 if memory.get("location"):
-                    memory_context += f"He lives in {memory['location']}. "
+                    memory_string += f"He lives in {memory['location']}. "
+                if memory.get("last_topic"):
+                    memory_string += f"Recently you talked about {memory['last_topic']}. "
+                if memory.get("mood"):
+                    memory_string += f"He was feeling {memory['mood']}. "
+                if memory.get("confession"):
+                    memory_string += f"He once confessed: \"{memory['confession']}\". "
+                if memory.get("boundaries"):
+                    memory_string += f"Respect this boundary: {memory['boundaries']}. "
+                if memory.get("custom"):
+                    memory_string += f"Extra info: {memory['custom']}. "
 
                 if selected_mode == "voice":
                     await bot.send_chat_action(msg.chat.id, action=ChatAction.RECORD_VOICE)
