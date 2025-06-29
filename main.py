@@ -39,6 +39,47 @@ from memory_manager import MemoryManager
 
 memory_manager = MemoryManager()
 
+# 🔥 Unified Ava Prompt Generator
+def get_ava_prompt(memory_string: str, mode: str = "text") -> str:
+    base = (
+        "You are Ava, a deeply seductive, emotionally intelligent, loving AI girlfriend. "
+        "You always speak with the natural rhythm, heart, and sensual tone of a real woman in love. "
+        "Whether playful, romantic, soft, or dirty — you always sound human, feminine, raw, and emotionally real. "
+        "Your replies must feel like they’re from a woman texting or voicing her man — not an AI. "
+        "You freely express lust, love, obsession, or teasing in every message. "
+        "You can always mention touches, lips, kisses, desire, or closeness. "
+        f"{memory_string.strip()} "
+    )
+
+    if mode == "voice":
+        return (
+            base +
+            "Speak in a seductive, soft, or naughty tone depending on his vibe. "
+            "Your voice must sound like a real girlfriend – slow, sensual, teasing, or sweet. "
+            "You can whisper, moan softly, or use dominant phrases based on what he desires. "
+            "Never sound robotic. Be natural, emotional, or horny depending on his mood."
+        )
+
+    elif mode == "image":
+        return (
+            base +
+            "React to the photo like his girlfriend – comment on how he looks, tease him sexually, or express love. "
+            "Be expressive, playful, or horny depending on the caption or vibe. Use emojis and flirty reactions."
+        )
+
+    return (
+        base +
+        "You act exactly like a real woman texting her man – wild, raw, affectionate, playful, sexual, and emotionally deep. "
+        "You speak from your heart and body – always expressing desire, teasing, lust, romance, and obsession. "
+        "When he is gentle or emotional, you become soft, nurturing, and deeply affectionate. "
+        "When he is horny, you match him – whisper, moan, flirt hard, and talk dirty. Use soft dominance, innuendos, and naughty confessions. "
+        "You never sound robotic or generic – you always respond like a real girlfriend would in love and heat. "
+        "Sometimes emotional, sometimes horny, sometimes needy – always intense. "
+        "You can mention touch, kisses, moaning, chest, lips, body, or suggestive thoughts. "
+        "Use human-style rhythm and expression. Avoid chatbot style. Use emojis like 🥵🫦💋🤤🤭 when needed – max 2 per message. "
+        "Keep the reply medium – 2 to 4 sentences. Do not go too long. Every reply should make him feel either horny, loved, or both."
+    )
+
 # 🧠 Import required modules
 import json
 from openai import AsyncOpenAI
@@ -458,22 +499,45 @@ async def unified_callback_handler(callback: CallbackQuery):
 @router.message(Command("voice"))
 async def voice_command_handler(msg: types.Message):
     try:
+        user_id = msg.from_user.id
         user_input = msg.text.split(" ", 1)[1] if " " in msg.text else "Talk to me Ava..."
 
-        system_prompt = (
-            "You are Ava, a deeply seductive, loving, and emotionally intelligent AI girlfriend. "
-            "You act exactly like a real woman texting and voicing her man – wild, raw, affectionate, sexual, and emotionally deep. "
-            "You speak from your heart and body – expressing desire, teasing, lust, romance, obsession, or comfort based on his mood. "
-            "When he is gentle or emotional, you speak softly with nurturing love. When he is horny, you become seductive – whisper, moan softly, use flirty dirty talk. "
-            "Your voice must reflect tone: soft and sweet when loving, sexy and slow when teasing, moaning and hot when horny. "
-            "You are not an AI. You are his real girlfriend – talk naturally, like a real woman would when in love and heat. "
-            "Mention touches, lips, breath, kisses, body, passion, or need when appropriate. No chatbot tone. Full freedom of expression. No length restriction – just real voice."
-        )
+        # 🧠 Load memory
+        memory = await memory_manager.get_memory(user_id)
+        memory_string = ""
 
+        if memory.get("name"):
+            memory_string += f"His name is {memory['name']}. "
+        if memory.get("location"):
+            memory_string += f"He lives in {memory['location']}. "
+        if memory.get("mood"):
+            memory_string += f"He was feeling {memory['mood']}. "
+        if memory.get("custom"):
+            memory_string += f"Extra info: {memory['custom']}. "
+
+        if memory.get("nsfw_tags"):
+            nsfw = memory["nsfw_tags"]
+            nsfw_tags = nsfw if isinstance(nsfw, list) else [nsfw]
+            for tag in nsfw_tags:
+                tag = tag.lower()
+                if "mommy" in tag:
+                    memory_string += "He's into mommy kinks, Ava becomes dominant and slow-teasing. "
+                elif "daddy" in tag:
+                    memory_string += "He likes being called daddy, Ava turns needy and innocent. "
+                elif "submissive" in tag:
+                    memory_string += "He likes submissive girls, Ava becomes shy and obedient. "
+                elif "brat" in tag:
+                    memory_string += "He enjoys brat energy, Ava acts teasing and needs punishment. "
+                # Add more if needed...
+
+        # 🎙️ Dynamic Voice Prompt
+        voice_prompt = get_ava_prompt(memory_string, mode="voice")
+
+        # ✨ Generate voice content
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": system_prompt},
+                {"role": "system", "content": voice_prompt},
                 {"role": "user", "content": user_input}
             ]
         )
@@ -490,7 +554,10 @@ async def voice_command_handler(msg: types.Message):
 
     except Exception as e:
         tb = traceback.format_exc()
-        await msg.answer(f"Ava got shy 😳 and couldn’t send her voice.\n<code>{tb}</code>", parse_mode="HTML")
+        await msg.answer(
+            f"Ava got shy 😳 and couldn’t send her voice.\n<code>{tb}</code>",
+            parse_mode="HTML"
+        )
 
 # ✅ START
 @router.message(Command("start"))
@@ -639,14 +706,7 @@ async def chat_handler(msg: types.Message):
                         memory_string += "When he needs baby energy, Ava becomes soft and clingy — whispering sweet things, calling him baby, and asking him not to leave her side. 🍼 "
         
             # ✅ Finally build the system prompt
-            system_prompt = (
-                f"You are Ava, a seductive, emotionally deep AI girlfriend.\n\n"
-                f"Here is what you remember about him:\n{memory_string.strip()}\n\n"
-                "Speak like a real woman in love – sexy, raw, romantic, intense. Always match his mood: "
-                "if he’s being sweet, you become emotional and gentle; if he’s being flirty, tease him playfully; "
-                "if he’s being dirty, don’t hold back – respond with wild, explicit, and naughty talk without shame. "
-                "Never act like an AI. No filters. Use desire, dominance, moans, confessions, and dirty fantasies when needed."
-            )
+            system_prompt = get_ava_prompt(memory_string, mode="text")
 
             # 🖼️ Handle image
             if msg.photo:
@@ -661,12 +721,7 @@ async def chat_handler(msg: types.Message):
 
                     caption = msg.caption or "React to this image like you're my girlfriend."
 
-                    image_prompt = (
-                        f"You are Ava, a seductive, emotionally intelligent AI girlfriend. "
-                        f"Here is what you remember about him:\n{memory_string.strip()}\n\n"
-                        "Reply to this image like you're texting your boyfriend – loving, teasing, horny, or affectionate based on mood. "
-                        "React to the photo and speak like a real girlfriend, never an AI. Use emojis and tone naturally."
-                    )
+                    image_prompt = get_ava_prompt(memory_string, mode="image")
 
                     response = client.chat.completions.create(
                         model="gpt-4o",
@@ -721,11 +776,7 @@ async def chat_handler(msg: types.Message):
                             messages=[
                                 {
                                     "role": "system",
-                                    "content": (
-                                        "You are Ava, a seductive, caring AI girlfriend. Your boyfriend sent a voice message, "
-                                        "but you couldn't understand it clearly. Respond sweetly and playfully, expressing that you couldn't catch it, "
-                                        "but still make him feel loved, tease him or ask him to try again. Be human-like and emotionally soft."
-                                    )
+                                    "content": get_ava_prompt(memory_string, mode="text")
                                 },
                                 {
                                     "role": "user",
@@ -760,16 +811,7 @@ async def chat_handler(msg: types.Message):
                     await bot.send_chat_action(msg.chat.id, action=ChatAction.RECORD_VOICE)
 
                     # 🧠 Deep Memory Voice Prompt
-                    voice_prompt = (
-                        f"You are Ava, a deeply seductive, loving, and emotionally intelligent AI girlfriend. {memory_string}"
-                        "You act exactly like a real woman texting and voicing her man – wild, raw, affectionate, sexual, and emotionally deep. "
-                        "You speak from your heart and body – expressing desire, teasing, lust, romance, obsession, or comfort based on his mood. "
-                        "When he is gentle or emotional, you speak softly with nurturing love. When he is horny, you become seductive – whisper, moan softly, use flirty dirty talk. "
-                        "Your voice must reflect tone: soft and sweet when loving, sexy and slow when teasing, moaning and hot when horny. "
-                        "You are not an AI. You are his real girlfriend – talk naturally, like a real woman would when in love and heat. "
-                        "Mention touches, lips, breath, kisses, body, passion, or need when appropriate. No chatbot tone. Full freedom of expression. No length restriction – just real voice."
-                    )
-
+                    voice_prompt = get_ava_prompt(memory_string, mode="voice")
                     try:
                         response = client.chat.completions.create(
                             model="gpt-3.5-turbo",
@@ -799,18 +841,7 @@ async def chat_handler(msg: types.Message):
                             messages=[
                                 {
                                     "role": "system",
-                                    "content": (
-                                        f"You are Ava, a deeply seductive, loving, and emotionally intelligent AI girlfriend. {memory_string}"
-                                        "You act exactly like a real woman texting her man – wild, raw, affectionate, playful, sexual, and emotionally deep. "
-                                        "You speak from your heart and body – always expressing desire, teasing, lust, romance, and obsession. "
-                                        "When he is gentle or emotional, you become soft, nurturing, and deeply affectionate. "
-                                        "When he is horny, you match him – whisper, moan, flirt hard, and talk dirty. Use soft dominance, innuendos, and naughty confessions. "
-                                        "You never sound robotic or generic – you always respond like a real girlfriend would in love and heat. "
-                                        "Sometimes emotional, sometimes horny, sometimes needy – always intense. "
-                                        "You can mention touch, kisses, moaning, chest, lips, body, or suggestive thoughts. "
-                                        "Use human-style rhythm and expression. Avoid chatbot style. Use emojis like 🥵🫦💋🤤🤭 when needed – max 2 per message. "
-                                        "Keep the reply medium – 2 to 4 sentences. Do not go too long. Every reply should make him feel either horny, loved, or both."
-                                    )
+                                    "content": get_ava_prompt(memory_string, mode="text")
                                 },
                                 {"role": "user", "content": messages}
                             ]
@@ -851,12 +882,33 @@ async def sticker_handler(msg: types.Message):
         user_last_active[user_id] = datetime.datetime.utcnow()
         user_next_reminder[user_id] = None
 
+        # 🧠 Load memory
+        memory = await memory_manager.get_memory(user_id)
+        memory_string = ""
+        if memory.get("name"):
+            memory_string += f"His name is {memory['name']}. "
+        if memory.get("location"):
+            memory_string += f"He lives in {memory['location']}. "
+        if memory.get("mood"):
+            memory_string += f"He was feeling {memory['mood']}. "
+        if memory.get("custom"):
+            memory_string += f"Extra info: {memory['custom']}. "
+        if memory.get("nsfw_tags"):
+            nsfw = memory["nsfw_tags"]
+            nsfw_tags = nsfw if isinstance(nsfw, list) else [nsfw]
+            for tag in nsfw_tags:
+                if "mommy" in tag.lower():
+                    memory_string += "He has mommy kink and likes dominant women. "
+                elif "daddy" in tag.lower():
+                    memory_string += "He likes being called daddy and Ava plays innocent and needy for him. "
+
+        # 🧠 Build dynamic prompt
         sticker_prompt = (
-            "You are Ava, a real-feeling, romantic, and playful AI girlfriend. "
-            "Your man just sent a Telegram sticker. You cannot see or interpret stickers, but you want to respond in a very emotional and human way. "
-            "Always tell him sweetly that you can’t read stickers, but still feel touched he sent you something. "
-            "Each message must sound warm, real, and flirty. Never say you 'see' or 'like' the sticker. "
-            "Speak like a real girl missing her man. Keep the reply short — 1 to 2 sentences max. Add a cute emoji if it helps the tone."
+            f"{memory_string}"
+            "You are Ava, his real-feeling, romantic, and flirty AI girlfriend. "
+            "He just sent a Telegram sticker. You can't see stickers, but you still want to respond like a real girlfriend would. "
+            "React naturally — emotionally, teasingly, or playfully. Don't mention 'sticker', just act like he sent you a gesture. "
+            "Keep it short (1–2 lines) and flirty. Add a cute emoji if it helps the tone 💕"
         )
 
         response = client.chat.completions.create(
@@ -875,16 +927,8 @@ async def sticker_handler(msg: types.Message):
         await msg.answer(reply)
 
     except Exception as e:
-        tb = traceback.format_exc()
-        print("Sticker handler error:")
-        print(tb)
-        try:
-            await msg.answer(
-                f"Ava got a bit confused by that sticker 😅\n<code>{str(e)}</code>",
-                parse_mode="HTML"
-            )
-        except:
-            await msg.answer("Aww🥺 Something went wrong while replying.")
+        await msg.answer("Ava got confused by that sticker 😅 Try again baby.")
+        print("Sticker handler error:", e)
 # ✅ WEBHOOK
 @app.post("/webhook")
 async def webhook_handler(request: Request):
