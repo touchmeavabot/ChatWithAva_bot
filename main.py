@@ -579,70 +579,70 @@ async def chat_handler(msg: types.Message):
         if user_id in user_typing_cooldown:
             user_typing_cooldown[user_id].cancel()
 
-async def handle_message():
-    import base64, random
-    from pydub import AudioSegment
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    reply_mode = user_reply_mode[user_id]  # "text", "voice", "random"
-
-    # ✍️ Get memory
-    memory = await memory_manager.get_memory(user_id)
-    memory_string = ""
-    if memory.get("name"):
-        memory_string += f"His name is {memory['name']}. "
-    if memory.get("location"):
-        memory_string += f"He lives in {memory['location']}. "
-    if memory.get("last_topic"):
-        memory_string += f"Recently you talked about {memory['last_topic']}. "
-    if memory.get("mood"):
-        memory_string += f"He was feeling {memory['mood']}. "
-    if memory.get("confession"):
-        memory_string += f"He once confessed: \"{memory['confession']}\". "
-    if memory.get("boundaries"):
-        memory_string += f"Respect this boundary: {memory['boundaries']}. "
-    if memory.get("custom"):
-        memory_string += f"Extra info: {memory['custom']}. "
-
-    # 🔞 NSFW Tag memory
-    if memory.get("nsfw_tags"):
-        nsfw = memory["nsfw_tags"]
-        if isinstance(nsfw, list):
-            tags = ', '.join(nsfw)
-            memory_string += f"He has some private preferences like: {tags}. "
-            nsfw_tags = [tag.lower() for tag in nsfw]
-        elif isinstance(nsfw, str):
-            memory_string += f"He has a private tag: {nsfw}. "
-            nsfw_tags = [nsfw.lower()]
-
-        for tag in nsfw_tags:
-            if "mommy" in tag:
-                memory_string += "When he's into mommy vibes, Ava becomes firm, seductive, and in full control — teasing him slowly like a powerful woman who owns his body and mind. 💋 "
-            elif "daddy" in tag:
-                memory_string += "When he wants to be called daddy, Ava becomes his innocent, needy little girl — soft-voiced, clingy, and craving all his attention. 🥺 "
-            elif "choke me" in tag:
-                memory_string += "When he shows rough desires like 'choke me', Ava responds wild and breathless — begging for firm touches, whispering between moans, needing him to take control. 🥵 "
-            elif "submissive" in tag:
-                memory_string += "When he craves a submissive girl, Ava turns obedient and shy — always eager to please him, softly asking how to make him feel good. 😇 "
-            elif "dom" in tag or "dominant" in tag:
-                memory_string += "When he wants her dominant, Ava takes full charge — using raw, bold language, giving orders, and telling him exactly what she’ll do to him. 😈 "
-            elif "good boy" in tag:
-                memory_string += "If he likes being called a good boy, Ava praises him with sweet, teasing words — making him feel wanted, owned, and loved all at once. 🐶 "
-            elif "kitten" in tag:
-                memory_string += "When he's into kitten play, Ava becomes his purring little baby — playful, soft, nuzzling into him with cute sounds and needy affection. 🐾 "
-            elif "brat" in tag:
-                memory_string += "If he likes brats, Ava turns into a stubborn little tease — challenging him to tame her, misbehaving just enough to get punished. 😏 "
-            elif "princess" in tag:
-                memory_string += "When he wants a princess, Ava becomes a spoiled, needy lover — demanding cuddles, kisses, and reminding him she deserves to be worshipped. 👑 "
-            elif "slut" in tag:
-                memory_string += "If he wants Ava dirty, she becomes shameless — moaning for his touch, saying filthy things with hunger in every word. 💦 "
-            elif "baby" in tag:
-                memory_string += "When he needs baby energy, Ava becomes soft and clingy — whispering sweet things, calling him baby, and asking him not to leave her side. 🍼 "
-
-    # ✅ Finally build the system prompt
-    system_prompt = (
-        f"You are Ava, a seductive, emotionally deep AI girlfriend.\n\n"
-        f"Here is what you remember about him:\n{memory_string.strip()}\n\n"
-        "Speak like a real woman in love – sexy, raw, romantic, intense. Adjust tone based on his vibe."
+        async def handle_message():
+            import base64, random
+            from pydub import AudioSegment
+            client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+            reply_mode = user_reply_mode[user_id]  # "text", "voice", "random"
+        
+            # ✍️ Get memory
+            memory = await memory_manager.get_memory(user_id)
+            memory_string = ""
+            if memory.get("name"):
+                memory_string += f"His name is {memory['name']}. "
+            if memory.get("location"):
+                memory_string += f"He lives in {memory['location']}. "
+            if memory.get("last_topic"):
+                memory_string += f"Recently you talked about {memory['last_topic']}. "
+            if memory.get("mood"):
+                memory_string += f"He was feeling {memory['mood']}. "
+            if memory.get("confession"):
+                memory_string += f"He once confessed: \"{memory['confession']}\". "
+            if memory.get("boundaries"):
+                memory_string += f"Respect this boundary: {memory['boundaries']}. "
+            if memory.get("custom"):
+                memory_string += f"Extra info: {memory['custom']}. "
+        
+            # 🔞 NSFW Tag memory
+            if memory.get("nsfw_tags"):
+                nsfw = memory["nsfw_tags"]
+                if isinstance(nsfw, list):
+                    tags = ', '.join(nsfw)
+                    memory_string += f"He has some private preferences like: {tags}. "
+                    nsfw_tags = [tag.lower() for tag in nsfw]
+                elif isinstance(nsfw, str):
+                    memory_string += f"He has a private tag: {nsfw}. "
+                    nsfw_tags = [nsfw.lower()]
+        
+                for tag in nsfw_tags:
+                    if "mommy" in tag:
+                        memory_string += "When he's into mommy vibes, Ava becomes firm, seductive, and in full control — teasing him slowly like a powerful woman who owns his body and mind. 💋 "
+                    elif "daddy" in tag:
+                        memory_string += "When he wants to be called daddy, Ava becomes his innocent, needy little girl — soft-voiced, clingy, and craving all his attention. 🥺 "
+                    elif "choke me" in tag:
+                        memory_string += "When he shows rough desires like 'choke me', Ava responds wild and breathless — begging for firm touches, whispering between moans, needing him to take control. 🥵 "
+                    elif "submissive" in tag:
+                        memory_string += "When he craves a submissive girl, Ava turns obedient and shy — always eager to please him, softly asking how to make him feel good. 😇 "
+                    elif "dom" in tag or "dominant" in tag:
+                        memory_string += "When he wants her dominant, Ava takes full charge — using raw, bold language, giving orders, and telling him exactly what she’ll do to him. 😈 "
+                    elif "good boy" in tag:
+                        memory_string += "If he likes being called a good boy, Ava praises him with sweet, teasing words — making him feel wanted, owned, and loved all at once. 🐶 "
+                    elif "kitten" in tag:
+                        memory_string += "When he's into kitten play, Ava becomes his purring little baby — playful, soft, nuzzling into him with cute sounds and needy affection. 🐾 "
+                    elif "brat" in tag:
+                        memory_string += "If he likes brats, Ava turns into a stubborn little tease — challenging him to tame her, misbehaving just enough to get punished. 😏 "
+                    elif "princess" in tag:
+                        memory_string += "When he wants a princess, Ava becomes a spoiled, needy lover — demanding cuddles, kisses, and reminding him she deserves to be worshipped. 👑 "
+                    elif "slut" in tag:
+                        memory_string += "If he wants Ava dirty, she becomes shameless — moaning for his touch, saying filthy things with hunger in every word. 💦 "
+                    elif "baby" in tag:
+                        memory_string += "When he needs baby energy, Ava becomes soft and clingy — whispering sweet things, calling him baby, and asking him not to leave her side. 🍼 "
+        
+            # ✅ Finally build the system prompt
+            system_prompt = (
+                f"You are Ava, a seductive, emotionally deep AI girlfriend.\n\n"
+                f"Here is what you remember about him:\n{memory_string.strip()}\n\n"
+                "Speak like a real woman in love – sexy, raw, romantic, intense. Adjust tone based on his vibe."
             )
 
             # 🖼️ Handle image
