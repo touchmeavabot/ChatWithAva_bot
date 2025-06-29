@@ -684,8 +684,8 @@ async def chat_handler(msg: types.Message):
 
                 selected_mode = random.choice(["text", "voice"]) if reply_mode == "random" else reply_mode
 
-                        if selected_mode == "voice":
-                            await bot.send_chat_action(msg.chat.id, action=ChatAction.RECORD_VOICE)
+                if selected_mode == "voice":
+                    await bot.send_chat_action(msg.chat.id, action=ChatAction.RECORD_VOICE)
 
                     # 🧠 Deep Memory Voice Prompt
                     voice_prompt = (
