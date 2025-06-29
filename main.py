@@ -666,16 +666,19 @@ async def chat_handler(msg: types.Message):
                 await msg.answer(refill_msg)
         
         # 🔋 Charge credits normally
+        refill_msg = await credit_manager.refill_if_due(user_id)
+        if refill_msg:
+            await msg.answer(refill_msg)
+
         charged = await credit_manager.charge_credits(user_id, 10)
         if not charged:
             await msg.answer(
                 "❌ You're out of Credits!\n"
                 "You'll get 100 free credits every 12 hours.\n\n"
                 "💳 Or buy more to unlock unlimited fun!"
-            )
-            return
+    )
+    return
 
-        charged = await credit_manager.charge_credits(user_id, 10)
         if not charged:
             await msg.answer(
                 "❌ You're out of Credits!\n"
