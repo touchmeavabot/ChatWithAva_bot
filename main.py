@@ -469,7 +469,11 @@ async def handle_credit_purchase(callback: types.CallbackQuery):
         start_parameter="buy_credits",
         is_flexible=False
     )
-
+# 📥 Handle Buy Credits Button Click
+@router.callback_query(F.data == "buy_credits")
+async def handle_buy_credits_callback(callback: types.CallbackQuery):
+    await callback.answer()
+    await credits_cmd(callback.message)  # Reuse /credits command to show purchase options
 # 🔹 Handle successful payment
 @router.message(lambda msg: msg.successful_payment is not None)
 async def successful_payment_handler(msg: types.Message):
