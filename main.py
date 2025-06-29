@@ -367,13 +367,24 @@ async def unlock_nude_callback(callback: CallbackQuery):
 
     # ✅ Step 3: Prepare NSFW prompt
     base_prompt = (
-        "ultra-detailed anime illustration, full body of seductive busty woman named Ava. "
-        "long flowing chestnut brown hair, emerald green eyes, soft fair glowing skin. "
-        "dominant milf aura, mature sexy expression, teasing seductive smile. "
-        "large perky anime-style breasts, wide juicy hips, thick thighs, hourglass shape. "
-        "pink lacy lingerie, exposed cleavage, slightly transparent panties. "
-        "on bed, suggestive pose, soft bedroom lighting, glowing glossy skin. "
-        "anime artstyle, high contrast, sharp linework, soft shading, 4K high resolution."
+        “Full-body, ultra-realistic anime woman with a mature, seductive ‘mommy’ aura”
+“She has a voluptuous hourglass figure with wide hips, thick thighs, and large soft breasts”
+“She has smooth fair skin with a soft natural glow and highly detailed skin texture”
+“She wears glossy lip balm and soft makeup with warm, flushed cheeks”
+“Her expression is caring yet flirtatious, with a gentle smile and seductive anime eyes”
+“She is wearing an extremely revealing, light sheer outfit between lingerie and bikini”
+“The outfit has thin straps, transparent fabric, and loose draping over her curves”
+“Underboob and sideboob are subtly visible through the see-through material”
+“Her soft belly and thighs are slightly exposed and glistening”
+“The fabric clings tightly to her waist and chest, showing teasing cleavage”
+“She stands confidently in a warm, softly lit sunlit room with a window behind her”
+“Soft shadows fall over her curves, enhancing her seductive form”
+“Her long silky hair flows past her shoulders, styled with mature elegance”
+“Her pose is elegant yet intimate, as if she’s inviting you closer with a knowing smile”
+“Anime style similar to high-end WaifuLabs or NovelAI art, with ultra-fine linework”
+“Scene includes soft warm lighting, cozy home background, and cinematic atmosphere”
+“Highly detailed, high resolution, full body, 4K quality, masterpiece level art”
+“Tasteful NSFW, erotic but elegant, no censorship, no full nudity”
     )
     user_input = user_nude_prompt.get(user_id, "")
     final_prompt = f"{base_prompt}, {user_input}" if user_input else base_prompt
