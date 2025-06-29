@@ -656,37 +656,24 @@ async def chat_handler(msg: types.Message):
         user_last_active[user_id] = datetime.datetime.utcnow()
         user_next_reminder[user_id] = None
 
-        # 🟩 Ava Credits Flow
-        credits = await credit_manager.get_credits(user_id)
+        # 🟩 Charge credits first
+        charged = await credit_manager.charge_credits(user_id, 10)
 
-        # ✅ Only trigger refill check if user has 0 credits
-        if credits == 0:
+        # ❌ Not enough credits
+        if not charged:
+            # Only then check if eligible for refill
             refill_msg = await credit_manager.refill_if_due(user_id)
             if refill_msg:
                 await msg.answer(refill_msg)
-        
-        # 🔋 Charge credits normally
-        refill_msg = await credit_manager.refill_if_due(user_id)
-        if refill_msg:
-            await msg.answer(refill_msg)
-
-        charged = await credit_manager.charge_credits(user_id, 10)
-        if not charged:
-            await msg.answer(
-                "❌ You're out of Credits!\n"
-                "You'll get 100 free credits every 12 hours.\n\n"
-                "💳 Or buy more to unlock unlimited fun!"
-            )
+            else:
+                await msg.answer(
+                    "❌ You're out of Credits!\n"
+                    "You'll get 100 free credits every 12 hours.\n\n"
+                    "💳 Or buy more to unlock unlimited fun!"
+                )
             return
 
-        if not charged:
-            await msg.answer(
-                "❌ You're out of Credits!\n"
-                "You'll get 100 free credits every 12 hours.\n\n"
-                "💳 Or buy more to unlock unlimited fun!"
-            )
-            return
-
+        # ✅ Cancel typing cooldown
         if user_id in user_typing_cooldown:
             user_typing_cooldown[user_id].cancel()
 
