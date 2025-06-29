@@ -2,7 +2,7 @@ import asyncpg
 import json
 import os
 
-DB_URL = os.getenv("DATABASE_URL")  # ✅ Railway DB URL from environment
+DB_URL = os.getenv("DATABASE_URL")
 
 class MemoryManager:
     def __init__(self):
@@ -16,8 +16,8 @@ class MemoryManager:
             row = await conn.fetchrow("SELECT memory FROM user_memory WHERE user_id = $1", user_id)
             if row and row["memory"]:
                 try:
-                    return json.loads(row["memory"])  # ✅ Convert JSON string to dict
-                except json.JSONDecodeError:
+                    return json.loads(row["memory"])
+                except:
                     return {}
             return {}
 
@@ -27,5 +27,5 @@ class MemoryManager:
                 INSERT INTO user_memory (user_id, memory)
                 VALUES ($1, $2)
                 ON CONFLICT (user_id)
-                DO UPDATE SET memory = EXCLUDED.memory
-            """, user_id, json.dumps(memory))  # ✅ Store dict as JSON string
+                DO UPDATE SET memory = $2
+            """, user_id, json.dumps(memory))
