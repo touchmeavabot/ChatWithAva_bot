@@ -72,19 +72,22 @@ class CreditManager:
             last_refill = row["last_refill"]
             initial_bonus_given = row["initial_bonus_given"]
 
-            # ✅ If entry exists but no bonus yet, give 300
-            if not initial_bonus_given:
+            # ✅ Debug print
+            print(f"📋 User {user_id} — Credits: {credits}, Bonus Given: {initial_bonus_given}")
+
+            # ✅ If bonus not given yet, give 300 and mark as given
+            if initial_bonus_given is False:
                 await conn.execute(
                     "UPDATE user_credits SET credits = $1, last_refill = $2, initial_bonus_given = TRUE WHERE user_id = $3",
                     300, datetime.datetime.utcnow(), user_id
                 )
                 return "🎉 You’ve received your first 300 Ava Credits! Enjoy chatting 😉"
 
-            # ✅ Still has credits – no refill needed
+            # ✅ Still has credits — no refill
             if credits > 0:
                 return None
 
-            # ✅ Check if refill time reached
+            # ✅ Refill if 12 hours passed
             time_since = (datetime.datetime.utcnow() - last_refill).total_seconds()
             if time_since >= REFILL_INTERVAL:
                 await conn.execute(
@@ -93,5 +96,5 @@ class CreditManager:
                 )
                 return f"💖 You’ve received {REFILL_AMOUNT} free Ava Credits! Enjoy your time again 😘"
 
-            # ❌ Not time for refill yet
+            # ❌ Not eligible yet
             return None
