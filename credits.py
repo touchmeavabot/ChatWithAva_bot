@@ -73,10 +73,10 @@ class CreditManager:
             initial_bonus_given = row["initial_bonus_given"]
 
             # ✅ Debug print
-            print(f"📋 User {user_id} — Credits: {credits}, Bonus Given: {initial_bonus_given}")
+            print(f"📋 User {user_id} — Credits: {credits}, Bonus Given: {initial_bonus_given} ({type(initial_bonus_given)})")
 
-            # ✅ If bonus not given yet, give 300 and mark as given
-            if initial_bonus_given is False:
+            # ✅ If bonus not given yet, give 300 and mark as given (only if credits < 300)
+            if not initial_bonus_given and credits < 300:
                 await conn.execute(
                     "UPDATE user_credits SET credits = $1, last_refill = $2, initial_bonus_given = TRUE WHERE user_id = $3",
                     300, datetime.datetime.utcnow(), user_id
