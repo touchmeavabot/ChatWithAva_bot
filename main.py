@@ -659,17 +659,23 @@ async def chat_handler(msg: types.Message):
         # 🟩 Charge credits first
         charged = await credit_manager.charge_credits(user_id, 10)
 
-        # ❌ Not enough credits
-        if not charged:
-            # Only then check if eligible for refill
+            # ❌ Not enough credits
+            if not charged:
+        # Only then check if eligible for refill
             refill_msg = await credit_manager.refill_if_due(user_id)
             if refill_msg:
                 await msg.answer(refill_msg)
             else:
+                buy_keyboard = InlineKeyboardMarkup(
+                    inline_keyboard=[
+                        [InlineKeyboardButton(text="💳 Buy Credits", callback_data="buy_credits")]
+                    ]
+                )
                 await msg.answer(
                     "❌ You're out of Credits!\n"
-                    "You'll get 100 free credits every 12 hours.\n\n"
-                    "💳 Or buy more to unlock unlimited fun!"
+                    "You'll get 100 free credits every 24 hours.\n\n"
+                    "💳 Or buy more to unlock unlimited fun!",
+                    reply_markup=buy_keyboard
                 )
             return
 
