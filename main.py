@@ -670,11 +670,21 @@ async def chat_handler(msg: types.Message):
                 text = full_message.lower()
                 if "my name is" in text:
                     memory["name"] = full_message.split("my name is")[-1].strip().split()[0]
+                
                 elif "i live in" in text:
                     memory["location"] = full_message.split("i live in")[-1].strip().split()[0]
+                
                 elif "i feel" in text or "i'm feeling" in text:
                     split_on = "i feel" if "i feel" in text else "i'm feeling"
-                    memory["mood"] = full_message.split(split_on)[-1].strip().split('.')[0]
+                    mood = full_message.split(split_on)[-1].strip().split('.')[0]
+                    memory["mood"] = mood
+                
+                elif "i am" in text or "i'm" in text:
+                    split_on = "i am" if "i am" in text else "i'm"
+                    possible_mood = full_message.split(split_on)[-1].strip().split('.')[0]
+                    if any(word in possible_mood for word in ["sad", "happy", "horny", "angry", "tired", "lonely"]):
+                        memory["mood"] = possible_mood
+                
                 elif "i want to confess" in text:
                     memory["confession"] = full_message.split("i want to confess")[-1].strip()
 
