@@ -657,12 +657,11 @@ async def chat_handler(msg: types.Message):
         user_next_reminder[user_id] = None
 
         # 🟩 Ava Credits Flow
-        existing = await credit_manager.get_credits(user_id)
-        if existing == 0:
-            await credit_manager.add_credits(user_id, 300)
-            await msg.answer("🎉 Welcome! You've received 300 Ava Credits to start chatting. Enjoy 😉")
-
-        await credit_manager.refill_if_due(user_id)
+# 🟩 Refill flow or new user bonus handled inside
+        refill_msg = await credit_manager.refill_if_due(user_id)
+        if refill_msg:
+            await msg.answer(refill_msg)
+        
         charged = await credit_manager.charge_credits(user_id, 10)
         if not charged:
             await msg.answer("❌ You're out of Ava Credits!\nYou'll get 100 free credits every 12 hours.\n\n💳 Or buy more to unlock unlimited fun!")
