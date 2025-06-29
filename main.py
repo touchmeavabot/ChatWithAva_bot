@@ -690,7 +690,7 @@ async def chat_handler(msg: types.Message):
         memory["last_topic"] = full_message[:50]
         await memory_manager.save_memory(user_id, memory)
 
-                # 🔄 Update last_topic memory
+            # 🔄 Update last_topic memory
                 memory["last_topic"] = full_message[:50]
                 await memory_manager.save_memory(user_id, memory)
 
