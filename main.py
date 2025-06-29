@@ -36,7 +36,8 @@ from promptchan_ai import generate_nsfw_image
 from reply_mode_manager import get_reply_mode
 from tg_gift_handler import credit_gift_router
 from memory_manager import MemoryManager
-from utils import smart_flirty_line, generate_voice
+from utility import smart_flirty_line
+from tts import generate_voice
 
 memory_manager = MemoryManager()
 
