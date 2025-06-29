@@ -32,8 +32,8 @@ class CreditManager:
                 )
             else:
                 await conn.execute(
-                    "INSERT INTO user_credits (user_id, credits, last_refill) VALUES ($1, $2, $3)",
-                    user_id, amount, datetime.datetime.utcnow()
+                    "INSERT INTO user_credits (user_id, credits, last_refill, initial_bonus_given) VALUES ($1, $2, $3, $4)",
+                    user_id, amount, datetime.datetime.utcnow(), True
                 )
 
     async def charge_credits(self, user_id: int, amount: int) -> bool:
@@ -57,19 +57,41 @@ class CreditManager:
     async def refill_if_due(self, user_id: int):
         async with self.pool.acquire() as conn:
             row = await conn.fetchrow(
-                "SELECT credits, last_refill FROM user_credits WHERE user_id = $1", user_id
+                "SELECT credits, last_refill, initial_bonus_given FROM user_credits WHERE user_id = $1", user_id
             )
+
+            # ✅ New user – create entry & give 300 welcome credits
             if not row:
-                await self.add_credits(user_id, REFILL_AMOUNT)
-                return
+                await conn.execute(
+                    "INSERT INTO user_credits (user_id, credits, last_refill, initial_bonus_given) VALUES ($1, $2, $3, $4)",
+                    user_id, 300, datetime.datetime.utcnow(), True
+                )
+                return "🎉 Welcome! You've received 300 Ava Credits to start chatting. Enjoy 😉"
 
-            credits, last_refill = row["credits"], row["last_refill"]
+            credits = row["credits"]
+            last_refill = row["last_refill"]
+            initial_bonus_given = row["initial_bonus_given"]
+
+            # ✅ If entry exists but no bonus yet, give 300
+            if not initial_bonus_given:
+                await conn.execute(
+                    "UPDATE user_credits SET credits = $1, last_refill = $2, initial_bonus_given = TRUE WHERE user_id = $3",
+                    300, datetime.datetime.utcnow(), user_id
+                )
+                return "🎉 You’ve received your first 300 Ava Credits! Enjoy chatting 😉"
+
+            # ✅ Still has credits – no refill needed
             if credits > 0:
-                return
+                return None
 
+            # ✅ Check if refill time reached
             time_since = (datetime.datetime.utcnow() - last_refill).total_seconds()
             if time_since >= REFILL_INTERVAL:
                 await conn.execute(
                     "UPDATE user_credits SET credits = $1, last_refill = $2 WHERE user_id = $3",
                     REFILL_AMOUNT, datetime.datetime.utcnow(), user_id
                 )
+                return f"💖 You’ve received {REFILL_AMOUNT} free Ava Credits! Enjoy your time again 😘"
+
+            # ❌ Not time for refill yet
+            return None
