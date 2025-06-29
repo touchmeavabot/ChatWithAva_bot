@@ -657,14 +657,17 @@ async def chat_handler(msg: types.Message):
         user_next_reminder[user_id] = None
 
         # 🟩 Ava Credits Flow
-# 🟩 Refill flow or new user bonus handled inside
         refill_msg = await credit_manager.refill_if_due(user_id)
         if refill_msg:
             await msg.answer(refill_msg)
-        
+
         charged = await credit_manager.charge_credits(user_id, 10)
         if not charged:
-            await msg.answer("❌ You're out of Ava Credits!\nYou'll get 100 free credits every 12 hours.\n\n💳 Or buy more to unlock unlimited fun!")
+            await msg.answer(
+                "❌ You're out of Credits!\n"
+                "You'll get 100 free credits every 12 hours.\n\n"
+                "💳 Or buy more to unlock unlimited fun!"
+            )
             return
 
         if user_id in user_typing_cooldown:
@@ -673,9 +676,10 @@ async def chat_handler(msg: types.Message):
         async def handle_message():
             import base64, random
             from pydub import AudioSegment
+            from openai import OpenAI
             client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
             reply_mode = user_reply_mode[user_id]  # "text", "voice", "random"
-        
+
             # ✍️ Get memory
             memory = await memory_manager.get_memory(user_id)
             memory_string = ""
