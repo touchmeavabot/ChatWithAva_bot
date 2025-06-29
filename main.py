@@ -660,7 +660,7 @@ async def chat_handler(msg: types.Message):
         charged = await credit_manager.charge_credits(user_id, 10)
 
             # ❌ Not enough credits
-            if not charged:
+        if not charged:
         # Only then check if eligible for refill
             refill_msg = await credit_manager.refill_if_due(user_id)
             if refill_msg:
