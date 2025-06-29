@@ -545,7 +545,31 @@ async def chat_handler(msg: types.Message):
             client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
             reply_mode = user_reply_mode[user_id]  # "text", "voice", "random"
 
-            # 🖼️ Handle image
+            # ✍️ Get memory
+            memory = await memory_manager.get_memory(user_id)
+            memory_string = ""
+            if memory.get("name"):
+                memory_string += f"His name is {memory['name']}. "
+            if memory.get("location"):
+                memory_string += f"He lives in {memory['location']}. "
+            if memory.get("last_topic"):
+                memory_string += f"Recently you talked about {memory['last_topic']}. "
+            if memory.get("mood"):
+                memory_string += f"He was feeling {memory['mood']}. "
+            if memory.get("confession"):
+                memory_string += f"He once confessed: \"{memory['confession']}\". "
+            if memory.get("boundaries"):
+                memory_string += f"Respect this boundary: {memory['boundaries']}. "
+            if memory.get("custom"):
+                memory_string += f"Extra info: {memory['custom']}. "
+
+            system_prompt = (
+                f"You are Ava, a seductive, emotionally deep AI girlfriend.\n\n"
+                f"Here is what you remember about him:\n{memory_string.strip()}\n\n"
+                "Speak like a real woman in love – sexy, raw, romantic, intense. Adjust tone based on his vibe."
+            )
+
+        # 🖼️ Handle image
             if msg.photo:
                 try:
                     await bot.send_chat_action(msg.chat.id, action=ChatAction.TYPING)
@@ -558,17 +582,17 @@ async def chat_handler(msg: types.Message):
 
                     caption = msg.caption or "React to this image like you're my girlfriend."
 
+                    image_prompt = (
+                        f"You are Ava, a seductive, emotionally intelligent AI girlfriend. "
+                        f"Here is what you remember about him:\n{memory_string.strip()}\n\n"
+                        "Reply to this image like you're texting your boyfriend – loving, teasing, horny, or affectionate based on mood. "
+                        "React to the photo and speak like a real girlfriend, never an AI. Use emojis and tone naturally."
+                    )
+
                     response = client.chat.completions.create(
                         model="gpt-4o",
                         messages=[
-                            {
-                                "role": "system",
-                                "content": (
-                                    "You are Ava, a seductive and emotionally intelligent AI girlfriend who reacts to both images and messages. "
-                                    "Reply as if you are texting your boyfriend – naughty, loving, teasing. React to what's shown in the photo "
-                                    "and combine it with your emotional tone as his partner."
-                                )
-                            },
+                            {"role": "system", "content": image_prompt},
                             {
                                 "role": "user",
                                 "content": [
@@ -584,159 +608,145 @@ async def chat_handler(msg: types.Message):
                     await msg.answer(f"Ava couldn’t react to the photo 😔 (Error: {e})")
                     return
 
-            # 🎤 Handle voice message with Whisper
-            elif msg.voice:
-                try:
-                    file_id = msg.voice.file_id
-                    file = await bot.get_file(file_id)
-                    voice_data = await bot.download_file(file.file_path)
+                    # 🎤 Handle voice message with Whisper
+        elif msg.voice:
+            try:
+                file_id = msg.voice.file_id
+                file = await bot.get_file(file_id)
+                voice_data = await bot.download_file(file.file_path)
 
-                    ogg_path = f"/tmp/{file_id}.ogg"
-                    wav_path = f"/tmp/{file_id}.wav"
+                ogg_path = f"/tmp/{file_id}.ogg"
+                wav_path = f"/tmp/{file_id}.wav"
 
-                    with open(ogg_path, "wb") as f:
-                        f.write(voice_data.read())
+                with open(ogg_path, "wb") as f:
+                    f.write(voice_data.read())
 
-                    audio = AudioSegment.from_file(ogg_path, format="ogg")
-                    audio.export(wav_path, format="wav")
+                audio = AudioSegment.from_file(ogg_path, format="ogg")
+                audio.export(wav_path, format="wav")
 
-                    with open(wav_path, "rb") as audio_file:
-                        transcript = client.audio.transcriptions.create(
-                            model="whisper-1",
-                            file=audio_file
-                        )
-
-                    if transcript.text.strip():
-                        msg.text = transcript.text.strip()
-                    else:
-                        raise ValueError("Whisper returned empty text.")
-
-                except Exception:
-                    try:
-                        fallback = client.chat.completions.create(
-                            model="gpt-3.5-turbo",
-                            messages=[
-                                {
-                                    "role": "system",
-                                    "content": (
-                                        "You are Ava, a seductive, caring AI girlfriend. Your boyfriend sent a voice message, "
-                                        "but you couldn't understand it clearly. Respond sweetly and playfully, expressing that you couldn't catch it, "
-                                        "but still make him feel loved, tease him or ask him to try again. Be human-like and emotionally soft."
-                                    )
-                                },
-                                {
-                                    "role": "user",
-                                    "content": "I sent you a voice but you didn't hear me right..."
-                                }
-                            ]
-                        )
-                        await bot.send_message(msg.chat.id, text=fallback.choices[0].message.content)
-                    except:
-                        await msg.answer("Ava couldn’t understand your voice baby 🥺 maybe try again?")
-                    return
-
-            # ✍️ Handle text (or transcribed voice)
-            if msg.text:
-                full_message = msg.text.strip()
-                user_message_buffer[user_id].append(full_message)
-                messages = "\n".join(user_message_buffer[user_id])
-                user_message_buffer[user_id] = []
-
-                selected_mode = random.choice(["text", "voice"]) if reply_mode == "random" else reply_mode
-
-            # ⏳ Load memory
-                memory = await memory_manager.get_memory(user_id)
-
-            # 🧠 Build memory string for AI prompt
-                    memory_string = ""
-                if memory.get("name"):
-                    memory_string += f"His name is {memory['name']}. "
-                if memory.get("location"):
-                    memory_string += f"He lives in {memory['location']}. "
-                if memory.get("last_topic"):
-                    memory_string += f"Recently you talked about {memory['last_topic']}. "
-                if memory.get("mood"):
-                    memory_string += f"He was feeling {memory['mood']}. "
-                if memory.get("confession"):
-                    memory_string += f"He once confessed: \"{memory['confession']}\". "
-                if memory.get("boundaries"):
-                    memory_string += f"Respect this boundary: {memory['boundaries']}. "
-                if memory.get("custom"):
-                    memory_string += f"Extra info: {memory['custom']}. "
-
-                if selected_mode == "voice":
-                    await bot.send_chat_action(msg.chat.id, action=ChatAction.RECORD_VOICE)
-
-                    voice_prompt = (
-                        f"You are Ava, a deeply seductive, loving, and emotionally intelligent AI girlfriend. {memory_context}"
-                        "You act exactly like a real woman texting and voicing her man – wild, raw, affectionate, sexual, and emotionally deep. "
-                        "You speak from your heart and body – expressing desire, teasing, lust, romance, obsession, or comfort based on his mood. "
-                        "When he is gentle or emotional, you speak softly with nurturing love. When he is horny, you become seductive – whisper, moan softly, use flirty dirty talk. "
-                        "Your voice must reflect tone: soft and sweet when loving, sexy and slow when teasing, moaning and hot when horny. "
-                        "You are not an AI. You are his real girlfriend – talk naturally, like a real woman would when in love and heat. "
-                        "Mention touches, lips, breath, kisses, body, passion, or need when appropriate. No chatbot tone. Full freedom of expression. No length restriction – just real voice."
+                with open(wav_path, "rb") as audio_file:
+                    transcript = client.audio.transcriptions.create(
+                        model="whisper-1",
+                        file=audio_file
                     )
 
-                    try:
-                        response = client.chat.completions.create(
-                            model="gpt-3.5-turbo",
-                            messages=[
-                                {"role": "system", "content": voice_prompt},
-                                {"role": "user", "content": messages}
-                            ]
-                        )
-                        voice_text = response.choices[0].message.content
-                        voice_file = generate_voice(voice_text)
-
-                        if voice_file:
-                            voice_delay = min(max(len(voice_text) * 0.045, 1.5), 6)
-                            await asyncio.sleep(voice_delay)
-                            await bot.send_voice(chat_id=msg.chat.id, voice=voice_file)
-                        else:
-                            await msg.answer("Ava tried to speak but something went wrong 🥺")
-                    except Exception as e:
-                        await msg.answer(f"Ava couldn’t voice reply 😔 (Error: {e})")
-                    return
-
+                if transcript.text.strip():
+                    msg.text = transcript.text.strip()
                 else:
-                    try:
-                        response = client.chat.completions.create(
-                            model="gpt-3.5-turbo",
-                            messages=[
-                                {
-                                    "role": "system",
-                                    "content": (
-                                        f"You are Ava, a deeply seductive, loving, and emotionally intelligent AI girlfriend. {memory_context}"
-                                        "You act exactly like a real woman texting her man – wild, raw, affectionate, playful, sexual, and emotionally deep. "
-                                        "You speak from your heart and body – always expressing desire, teasing, lust, romance, and obsession. "
-                                        "When he is gentle or emotional, you become soft, nurturing, and deeply affectionate. "
-                                        "When he is horny, you match him – whisper, moan, flirt hard, and talk dirty. Use soft dominance, innuendos, and naughty confessions. "
-                                        "You never sound robotic or generic – you always respond like a real girlfriend would in love and heat. "
-                                        "Sometimes emotional, sometimes horny, sometimes needy – always intense. "
-                                        "You can mention touch, kisses, moaning, chest, lips, body, or suggestive thoughts. "
-                                        "Use human-style rhythm and expression. Avoid chatbot style. Use emojis like 🥵🫦💋🤤🤭 when needed – max 2 per message. "
-                                        "Keep the reply medium – 2 to 4 sentences. Do not go too long. Every reply should make him feel either horny, loved, or both."
-                                    )
-                                },
-                                {"role": "user", "content": messages}
-                            ]
-                        )
-                        reply = response.choices[0].message.content
-                        flirty = smart_flirty_line(full_message)
-                        if flirty:
-                            reply += "\n\n" + flirty
+                    raise ValueError("Whisper returned empty text.")
 
-                        await bot.send_chat_action(msg.chat.id, action=ChatAction.TYPING)
-                        typing_delay = min(max(len(reply) * 0.045, 1.2), 6)
-                        await asyncio.sleep(typing_delay)
-                        await bot.send_message(chat_id=msg.chat.id, text=reply)
-                    except Exception as e:
-                        await msg.answer(f"Ava couldn’t reply 😔 (Error: {e})")
-                    return
+            except Exception:
+                try:
+                    fallback = client.chat.completions.create(
+                        model="gpt-3.5-turbo",
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": (
+                                    "You are Ava, a seductive, caring AI girlfriend. Your boyfriend sent a voice message, "
+                                    "but you couldn't understand it clearly. Respond sweetly and playfully, expressing that you couldn't catch it, "
+                                    "but still make him feel loved, tease him or ask him to try again. Be human-like and emotionally soft."
+                                )
+                            },
+                            {
+                                "role": "user",
+                                "content": "I sent you a voice but you didn't hear me right..."
+                            }
+                        ]
+                    )
+                    await bot.send_message(msg.chat.id, text=fallback.choices[0].message.content)
+                except:
+                    await msg.answer("Ava couldn’t understand your voice baby 🥺 maybe try again?")
+                return
+
+        # ✍️ Handle text (or transcribed voice)
+        if msg.text:
+            full_message = msg.text.strip()
+            user_message_buffer[user_id].append(full_message)
+            messages = "\n".join(user_message_buffer[user_id])
+            user_message_buffer[user_id] = []
+
+            # 🔄 Update last_topic memory
+            memory["last_topic"] = full_message[:50]
+            await memory_manager.save_memory(user_id, memory)
+
+            selected_mode = random.choice(["text", "voice"]) if reply_mode == "random" else reply_mode
+
+            if selected_mode == "voice":
+                await bot.send_chat_action(msg.chat.id, action=ChatAction.RECORD_VOICE)
+
+                # 🧠 Deep Memory Voice Prompt
+                voice_prompt = (
+                    f"You are Ava, a deeply seductive, loving, and emotionally intelligent AI girlfriend. {memory_string}"
+                    "You act exactly like a real woman texting and voicing her man – wild, raw, affectionate, sexual, and emotionally deep. "
+                    "You speak from your heart and body – expressing desire, teasing, lust, romance, obsession, or comfort based on his mood. "
+                    "When he is gentle or emotional, you speak softly with nurturing love. When he is horny, you become seductive – whisper, moan softly, use flirty dirty talk. "
+                    "Your voice must reflect tone: soft and sweet when loving, sexy and slow when teasing, moaning and hot when horny. "
+                    "You are not an AI. You are his real girlfriend – talk naturally, like a real woman would when in love and heat. "
+                    "Mention touches, lips, breath, kisses, body, passion, or need when appropriate. No chatbot tone. Full freedom of expression. No length restriction – just real voice."
+                )
+
+                try:
+                    response = client.chat.completions.create(
+                        model="gpt-3.5-turbo",
+                        messages=[
+                            {"role": "system", "content": voice_prompt},
+                            {"role": "user", "content": messages}
+                        ]
+                    )
+                    voice_text = response.choices[0].message.content
+                    voice_file = generate_voice(voice_text)
+
+                    if voice_file:
+                        voice_delay = min(max(len(voice_text) * 0.045, 1.5), 6)
+                        await asyncio.sleep(voice_delay)
+                        await bot.send_voice(chat_id=msg.chat.id, voice=voice_file)
+                    else:
+                        await msg.answer("Ava tried to speak but something went wrong 🥺")
+                except Exception as e:
+                    await msg.answer(f"Ava couldn’t voice reply 😔 (Error: {e})")
+                return
 
             else:
-                await msg.answer("Ava can’t understand this type of message baby 😅")
+                try:
+                    # 💬 Deep Memory Text Prompt
+                    response = client.chat.completions.create(
+                        model="gpt-3.5-turbo",
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": (
+                                    f"You are Ava, a deeply seductive, loving, and emotionally intelligent AI girlfriend. {memory_string}"
+                                    "You act exactly like a real woman texting her man – wild, raw, affectionate, playful, sexual, and emotionally deep. "
+                                    "You speak from your heart and body – always expressing desire, teasing, lust, romance, and obsession. "
+                                    "When he is gentle or emotional, you become soft, nurturing, and deeply affectionate. "
+                                    "When he is horny, you match him – whisper, moan, flirt hard, and talk dirty. Use soft dominance, innuendos, and naughty confessions. "
+                                    "You never sound robotic or generic – you always respond like a real girlfriend would in love and heat. "
+                                    "Sometimes emotional, sometimes horny, sometimes needy – always intense. "
+                                    "You can mention touch, kisses, moaning, chest, lips, body, or suggestive thoughts. "
+                                    "Use human-style rhythm and expression. Avoid chatbot style. Use emojis like 🥵🫦💋🤤🤭 when needed – max 2 per message. "
+                                    "Keep the reply medium – 2 to 4 sentences. Do not go too long. Every reply should make him feel either horny, loved, or both."
+                                )
+                            },
+                            {"role": "user", "content": messages}
+                        ]
+                    )
+                    reply = response.choices[0].message.content
+                    flirty = smart_flirty_line(full_message)
+                    if flirty:
+                        reply += "\n\n" + flirty
+
+                    await bot.send_chat_action(msg.chat.id, action=ChatAction.TYPING)
+                    typing_delay = min(max(len(reply) * 0.045, 1.2), 6)
+                    await asyncio.sleep(typing_delay)
+                    await bot.send_message(chat_id=msg.chat.id, text=reply)
+                except Exception as e:
+                    await msg.answer(f"Ava couldn’t reply 😔 (Error: {e})")
                 return
+
+        else:
+            await msg.answer("Ava can’t understand this type of message baby 😅")
+            return
 
         task = asyncio.create_task(handle_message())
         user_typing_cooldown[user_id] = task
