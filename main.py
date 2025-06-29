@@ -676,8 +676,8 @@ async def chat_handler(msg: types.Message):
                 "❌ You're out of Credits!\n"
                 "You'll get 100 free credits every 12 hours.\n\n"
                 "💳 Or buy more to unlock unlimited fun!"
-    )
-    return
+            )
+            return
 
         if not charged:
             await msg.answer(
