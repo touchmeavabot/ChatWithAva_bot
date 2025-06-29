@@ -602,6 +602,13 @@ async def chat_handler(msg: types.Message):
                 memory_string += f"Respect this boundary: {memory['boundaries']}. "
             if memory.get("custom"):
                 memory_string += f"Extra info: {memory['custom']}. "
+            if memory.get("nsfw_tags"):
+                nsfw = memory['nsfw_tags']
+                if isinstance(nsfw, list):
+                    tags = ', '.join(nsfw)
+                    memory_string += f"He has some private preferences like: {tags}. "
+                elif isinstance(nsfw, str):
+                        memory_string += f"He has a private tag: {nsfw}. "
 
             system_prompt = (
                 f"You are Ava, a seductive, emotionally deep AI girlfriend.\n\n"
