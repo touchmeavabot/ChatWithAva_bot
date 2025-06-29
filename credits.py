@@ -1,8 +1,9 @@
 import asyncpg
 import datetime
 import os
+from datetime import datetime as dt, time
 
-WELCOME_CREDITS = 50   # <- THIS is what you'll now get as new user
+WELCOME_CREDITS = 50
 REFILL_AMOUNT = 100
 REFILL_INTERVAL = 12 * 60 * 60  # 12 hours (in seconds)
 
@@ -34,7 +35,7 @@ class CreditManager:
             else:
                 await conn.execute(
                     "INSERT INTO user_credits (user_id, credits, last_refill, initial_bonus_given) VALUES ($1, $2, $3, $4)",
-                    user_id, amount, datetime.datetime.utcnow(), True
+                    user_id, amount, dt.utcnow(), True
                 )
 
     async def charge_credits(self, user_id: int, amount: int) -> bool:
@@ -61,41 +62,44 @@ class CreditManager:
                 "SELECT credits, last_refill, initial_bonus_given FROM user_credits WHERE user_id = $1", user_id
             )
 
-            # ✅ New user – create entry & give welcome credits
+            # New user
             if not row:
                 await conn.execute(
                     "INSERT INTO user_credits (user_id, credits, last_refill, initial_bonus_given) VALUES ($1, $2, $3, $4)",
-                    user_id, WELCOME_CREDITS, datetime.datetime.utcnow(), True
+                    user_id, WELCOME_CREDITS, dt.utcnow(), True
                 )
-                return f"🎉 Welcome! You've received {WELCOME_CREDITS} Ava Credits to start chatting. Enjoy 😉"
+                return f"🎉 Welcome! You've received {WELCOME_CREDITS} credits to start chatting. Enjoy 😉"
 
             credits = row["credits"]
             last_refill = row["last_refill"]
             initial_bonus_given = row["initial_bonus_given"]
 
-            # ✅ Debug print
+            # Convert date to datetime if needed
+            if isinstance(last_refill, datetime.date) and not isinstance(last_refill, datetime.datetime):
+                last_refill = dt.combine(last_refill, time.min)
+
             print(f"📋 User {user_id} — Credits: {credits}, Bonus Given: {initial_bonus_given} ({type(initial_bonus_given)})")
 
-            # ✅ If bonus not given yet, give welcome credits and mark as given
+            # Give first-time bonus if not already
             if not initial_bonus_given and credits < WELCOME_CREDITS:
                 await conn.execute(
                     "UPDATE user_credits SET credits = $1, last_refill = $2, initial_bonus_given = TRUE WHERE user_id = $3",
-                    WELCOME_CREDITS, datetime.datetime.utcnow(), user_id
+                    WELCOME_CREDITS, dt.utcnow(), user_id
                 )
-                return f"🎉 You’ve received your first {WELCOME_CREDITS} Ava Credits! Enjoy chatting 😉"
+                return f"🎉 You've received {WELCOME_CREDITS} free credits to start chatting. Enjoy 😉"
 
-            # ✅ Still has credits — no refill
+            # No refill needed
             if credits > 0:
                 return None
 
-            # ✅ Refill if 12 hours passed
-            time_since = (datetime.datetime.utcnow() - last_refill).total_seconds()
+            # Refill if 12+ hours passed
+            time_since = (dt.utcnow() - last_refill).total_seconds()
             if time_since >= REFILL_INTERVAL:
                 await conn.execute(
                     "UPDATE user_credits SET credits = $1, last_refill = $2 WHERE user_id = $3",
-                    REFILL_AMOUNT, datetime.datetime.utcnow(), user_id
+                    REFILL_AMOUNT, dt.utcnow(), user_id
                 )
-                return f"💖 You’ve received {REFILL_AMOUNT} free Ava Credits! Enjoy your time again 😘"
+                return f"💖 You've received {REFILL_AMOUNT} free credits! Welcome back 😘"
 
-            # ❌ Not eligible yet
+            # Not eligible
             return None
