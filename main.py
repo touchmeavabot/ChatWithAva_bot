@@ -573,12 +573,6 @@ async def voice_command_handler(msg: types.Message):
             parse_mode="HTML"
         )
 
-    # Combine tone prompt + message
-    final_prompt = voice_prompt + "\n" + text
-
-    # 👇 Replace this with your actual TTS logic
-    return call_seductive_voice_model(prompt=final_prompt)
-
 # ✅ START
 @router.message(Command("start"))
 async def start_cmd(msg: types.Message):
