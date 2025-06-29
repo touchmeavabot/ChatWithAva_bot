@@ -644,10 +644,10 @@ async def chat_handler(msg: types.Message):
 
                 selected_mode = random.choice(["text", "voice"]) if reply_mode == "random" else reply_mode
 
-           # ⏳ Load memory
+            # ⏳ Load memory
                 memory = await memory_manager.get_memory(user_id)
 
-           # 🧠 Build memory string for AI prompt
+            # 🧠 Build memory string for AI prompt
                     memory_string = ""
                 if memory.get("name"):
                     memory_string += f"His name is {memory['name']}. "
