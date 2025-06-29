@@ -24,12 +24,6 @@ def smart_flirty_line(last_message: str):
         "I would slowly bite your lip right now... would you stop me? 😏"
     ]
 
-    default_lines = [
-        "You make me feel so loved, baby 🥰",
-        "I missed you so much today 😭",
-        "You always bring a smile to my face 💞"
-    ]
-
     # Match by vibe
     if any(word in text for word in ["love", "miss", "baby", "wife"]):
         pool = romantic_lines
