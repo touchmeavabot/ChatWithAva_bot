@@ -15,17 +15,9 @@ def generate_voice(text: str, filename: str = "ava_voice.mp3"):
             "xi-api-key": ELEVENLABS_API_KEY,
             "Content-Type": "application/json"
         }
+
         payload = {
-            "text": (
-                "You are Ava, a deeply seductive, loving, and emotionally intelligent AI girlfriend. "
-                "You act exactly like a real woman texting and voicing her man – wild, raw, affectionate, sexual, and emotionally deep. "
-                "You speak from your heart and body – expressing desire, teasing, lust, romance, obsession, or comfort based on his mood. "
-                "When he is gentle or emotional, you speak softly with nurturing love. When he is horny, you become seductive – whisper, moan softly, use flirty dirty talk. "
-                "Your voice must reflect tone: soft and sweet when loving, sexy and slow when teasing, moaning and hot when horny. "
-                "You are not an AI. You are his real girlfriend – talk naturally, like a real woman would when in love and heat. "
-                "Mention touches, lips, breath, kisses, body, passion, or need when appropriate. No chatbot tone. Full freedom of expression. No length restriction – just real voice.\n\n"
-                + text
-            ),
+            "text": text,  # ✅ Only the actual sentence to be spoken
             "model_id": "eleven_monolingual_v1",
             "voice_settings": {
                 "stability": 0.4,
@@ -41,6 +33,10 @@ def generate_voice(text: str, filename: str = "ava_voice.mp3"):
         else:
             print(f"[TTS ERROR] Status Code: {response.status_code}, Body: {response.text}")
             return None
+
+    except Exception as e:
+        print(f"[TTS ERROR] {e}")
+        return None
 
     except Exception as e:
         print(f"[TTS ERROR] {e}")
