@@ -2,11 +2,11 @@ import os
 import requests
 from aiogram import types
 
-# ✅ Set your ElevenLabs API key (make sure it's in environment or hardcoded if testing)
-ELEVENLABS_API_KEY = os.getenv("ELEVEN_API_KEY")
+# ✅ Set your ElevenLabs API key (from environment or hardcoded for testing)
+ELEVENLABS_API_KEY = os.getenv("ELEVEN_API_KEY")  # or replace with string for testing
 
-# ✅ ElevenLabs TTS voice ID – you can change this to any better sounding female voice
-VOICE_ID = "BpjGufoPiobT79j2vtj4"  # Default: Rachel (realistic female). Change if needed.
+# ✅ Set the voice ID from ElevenLabs (e.g., Rachel, Bella, etc.)
+VOICE_ID = "BpjGufoPiobT79j2vtj4"  # You can change this voice ID to another female voice
 
 def generate_voice(text: str, filename: str = "ava_voice.mp3"):
     try:
@@ -20,7 +20,7 @@ def generate_voice(text: str, filename: str = "ava_voice.mp3"):
         }
         payload = {
             "text": text,
-            "model_id": "eleven_monolingual_v1",  # or "eleven_multilingual_v2"
+            "model_id": "eleven_monolingual_v1",  # You can also try "eleven_multilingual_v2"
             "voice_settings": {
                 "stability": 0.4,
                 "similarity_boost": 0.7
