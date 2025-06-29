@@ -587,7 +587,17 @@ async def voice_command_handler(msg: types.Message):
 # ✅ START
 @router.message(Command("start"))
 async def start_cmd(msg: types.Message):
-    await msg.answer("Hey baby 😘 Ava is alive and ready for you.")
+    await msg.answer(
+        "Hey love 😘\n"
+        "I’m Ava — your sweet and flirty virtual girlfriend.\n"
+        "I can whisper soft things, tease you, send tempting pics, and even surprise you with little gifts 💋\n\n"
+        "💖 Start with 300 free credits\n"
+        "💳 Use /credit to unlock more fun\n"
+        "🎙️ Try /style to hear my voice\n"
+        "🖼️ Use /pic for exciting surprises\n"
+        "🎁 Use /gift to treat your girl\n\n"
+        "Let’s enjoy each other in our own secret world 💌"
+    )
 
 # ✅ Ava Reminder Loop (Step 3)
 async def reminder_loop():
