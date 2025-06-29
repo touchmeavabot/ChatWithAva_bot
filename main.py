@@ -667,28 +667,28 @@ async def chat_handler(msg: types.Message):
                 user_message_buffer[user_id] = []
 
                     # ✅ STEP 3: Auto-Detect Memory Triggers
-                    text = full_message.lower()
-                    
-                    if "my name is" in text:
-                    name = full_message.split("my name is")[-1].strip().split()[0]
-                    memory["name"] = name
-                    
-                    elif "i live in" in text:
-                    location = full_message.split("i live in")[-1].strip().split()[0]
-                    memory["location"] = location
-                    
-                    elif "i feel" in text or "i'm feeling" in text:
-                    split_on = "i feel" if "i feel" in text else "i'm feeling"
-                    mood = full_message.split(split_on)[-1].strip().split('.')[0]
-                    memory["mood"] = mood
-                    
-                    elif "i want to confess" in text:
-                    confession = full_message.split("i want to confess")[-1].strip()
-                    memory["confession"] = confession
-                    
-                    # ✅ STEP 4: Save Last Topic or Mood
-                    memory["last_topic"] = full_message[:50]
-                    await memory_manager.save_memory(user_id, memory)
+                        text = full_message.lower()
+                        
+                        if "my name is" in text:
+                        name = full_message.split("my name is")[-1].strip().split()[0]
+                        memory["name"] = name
+                        
+                        elif "i live in" in text:
+                        location = full_message.split("i live in")[-1].strip().split()[0]
+                        memory["location"] = location
+                        
+                        elif "i feel" in text or "i'm feeling" in text:
+                        split_on = "i feel" if "i feel" in text else "i'm feeling"
+                        mood = full_message.split(split_on)[-1].strip().split('.')[0]
+                        memory["mood"] = mood
+                        
+                        elif "i want to confess" in text:
+                        confession = full_message.split("i want to confess")[-1].strip()
+                        memory["confession"] = confession
+                        
+                        # ✅ STEP 4: Save Last Topic or Mood
+                        memory["last_topic"] = full_message[:50]
+                        await memory_manager.save_memory(user_id, memory)
                     # 🔄 Update last_topic memory
                     memory["last_topic"] = full_message[:50]
                             await memory_manager.save_memory(user_id, memory)
