@@ -673,16 +673,16 @@ async def chat_handler(msg: types.Message):
                 name = full_message.split("my name is")[-1].strip().split()[0]
                 memory["name"] = name
                 
-                elif "i live in" in text:
+            elif "i live in" in text:
                 location = full_message.split("i live in")[-1].strip().split()[0]
                 memory["location"] = location
                 
-                elif "i feel" in text or "i'm feeling" in text:
+            elif "i feel" in text or "i'm feeling" in text:
                 split_on = "i feel" if "i feel" in text else "i'm feeling"
                 mood = full_message.split(split_on)[-1].strip().split('.')[0]
                 memory["mood"] = mood
                 
-                elif "i want to confess" in text:
+            elif "i want to confess" in text:
                 confession = full_message.split("i want to confess")[-1].strip()
                 memory["confession"] = confession
                         
