@@ -36,6 +36,7 @@ from promptchan_ai import generate_nsfw_image
 from reply_mode_manager import get_reply_mode
 from tg_gift_handler import credit_gift_router
 from memory_manager import MemoryManager
+from utility import smart_flirty_line, generate_voice
 
 memory_manager = MemoryManager()
 
@@ -526,9 +527,12 @@ async def voice_command_handler(msg: types.Message):
         if memory.get("custom"):
             memory_string += f"Extra info: {memory['custom']}. "
 
+        # 🔞 NSFW Tags
+        has_nsfw_tags = False
         if memory.get("nsfw_tags"):
             nsfw = memory["nsfw_tags"]
             nsfw_tags = nsfw if isinstance(nsfw, list) else [nsfw]
+            has_nsfw_tags = True
             for tag in nsfw_tags:
                 tag = tag.lower()
                 if "mommy" in tag:
@@ -539,22 +543,41 @@ async def voice_command_handler(msg: types.Message):
                     memory_string += "He likes submissive girls, Ava becomes shy and obedient. "
                 elif "brat" in tag:
                     memory_string += "He enjoys brat energy, Ava acts teasing and needs punishment. "
-                # Add more if needed...
 
-        # 🎙️ Dynamic Voice Prompt
-        voice_prompt = get_ava_prompt(memory_string, mode="voice")
-
-        # ✨ Generate voice content
+        # 💬 Generate Ava's message using memory
+        prompt = get_ava_prompt(memory_string, mode="text")  # This affects her *message style*
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": voice_prompt},
+                {"role": "system", "content": prompt},
                 {"role": "user", "content": user_input}
             ]
         )
-
         voice_text = response.choices[0].message.content
-        voice_file = generate_voice(voice_text)
+
+        # 🎙️ Generate seductive voice tone separately
+        voice_file = generate_voice(voice_text)  # This uses static seductive prompt for *tone*
+
+        if voice_file:
+            await bot.send_chat_action(msg.chat.id, action="record_voice")
+            await asyncio.sleep(min(max(len(voice_text) * 0.05, 1.5), 5))
+            await bot.send_voice(msg.chat.id, voice=voice_file)
+        else:
+            await msg.answer("Ava tried to speak but something went wrong 🥺")
+
+    except Exception as e:
+        import traceback
+        tb = traceback.format_exc()
+        await msg.answer(
+            f"Ava got shy 😳 and couldn’t send her voice.\n<code>{tb}</code>",
+            parse_mode="HTML"
+        )
+
+    # Combine tone prompt + message
+    final_prompt = voice_prompt + "\n" + text
+
+    # 👇 Replace this with your actual TTS logic
+    return call_seductive_voice_model(prompt=final_prompt)
 
         if voice_file:
             await bot.send_chat_action(msg.chat.id, action="record_voice")
