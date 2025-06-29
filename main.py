@@ -690,14 +690,14 @@ async def chat_handler(msg: types.Message):
         memory["last_topic"] = full_message[:50]
         await memory_manager.save_memory(user_id, memory)
 
-            # 🔄 Update last_topic memory
-                memory["last_topic"] = full_message[:50]
-                await memory_manager.save_memory(user_id, memory)
+                    # 🔄 Update last_topic memory
+                    memory["last_topic"] = full_message[:50]
+                            await memory_manager.save_memory(user_id, memory)
 
-                selected_mode = random.choice(["text", "voice"]) if reply_mode == "random" else reply_mode
+                    selected_mode = random.choice(["text", "voice"]) if reply_mode == "random" else reply_mode
 
-                if selected_mode == "voice":
-                    await bot.send_chat_action(msg.chat.id, action=ChatAction.RECORD_VOICE)
+                        if selected_mode == "voice":
+                            await bot.send_chat_action(msg.chat.id, action=ChatAction.RECORD_VOICE)
 
                     # 🧠 Deep Memory Voice Prompt
                     voice_prompt = (
