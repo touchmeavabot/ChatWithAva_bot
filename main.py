@@ -609,7 +609,6 @@ async def start_cmd(msg: types.Message):
         "💖 Start with 300 free credits\n"
         "💳 Use /credit to unlock more fun\n"
         "🎙️ Try /style to hear my voice\n"
-        "🖼️ Use /pic for exciting surprises\n"
         "🎁 Use /gift to treat your girl\n\n"
         "Let’s enjoy each other in our own secret world 💌"
     )
