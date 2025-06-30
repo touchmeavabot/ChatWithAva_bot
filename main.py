@@ -38,6 +38,18 @@ from tg_gift_handler import credit_gift_router
 from memory_manager import MemoryManager
 from utils import smart_flirty_line
 from tts import generate_voice
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+
+ava_diary_kb = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="📖 Ava's Diary",
+                web_app=WebAppInfo(url="https://avaminiapp-production.up.railway.app")
+            )
+        ]
+    ]
+)
 
 memory_manager = MemoryManager()
 
@@ -312,6 +324,13 @@ async def handle_successful_star_gift(msg: Message):
 
     except Exception as e:
         await msg.answer(f"⚠️ Error sending Ava’s reply: {e}")
+#AvaDiary
+@router.message(Command("diary"))
+async def send_diary_link(message: Message):
+    await message.answer(
+        "Open my diary, baby 💋 It’s full of naughty little secrets...\n\n#AvaDiary",
+        reply_markup=ava_diary_kb
+    )
 
 # ✅ Step 1: /pic command shows teaser
 @dp.message(Command("pic"))
